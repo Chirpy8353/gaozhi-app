@@ -760,28 +760,79 @@
   }
   .lib-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
   .lib-empty{ text-align:center; color:var(--ink-faint); font-size:13px; padding:40px 0; }
+
+  /* ---------- Today overview card ---------- */
+  .today-card{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:6px;
+    padding:20px 24px; margin-bottom:24px;
+  }
+  .today-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+  .today-head h3{
+    font-family:"Noto Serif SC", serif; font-size:15px; margin:0; color:var(--ink); letter-spacing:1px;
+  }
+  .today-range{ font-size:11.5px; color:var(--ink-faint); }
+  .today-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:18px;
+    padding-bottom:16px; margin-bottom:14px; border-bottom:1px dashed var(--line-soft);
+  }
+  .today-stat{ display:flex; align-items:center; gap:10px; }
+  .ts-icon{
+    width:30px; height:30px; flex-shrink:0; border-radius:7px;
+    background:var(--vermillion-bg); color:var(--vermillion);
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+  }
+  .ts-label{ font-size:11px; color:var(--ink-faint); margin-bottom:2px; }
+  .ts-value{ font-family:"Noto Serif SC", serif; font-size:19px; font-weight:700; color:var(--ink); }
+  .ts-value small{ font-size:11px; font-weight:400; color:var(--ink-faint); margin-left:2px; }
+  .today-trend .tt-label{ font-size:11px; color:var(--ink-faint); margin-bottom:10px; }
+  .today-trend .tt-label span{ color:var(--ink-faint); opacity:.75; margin-left:4px; }
+  .tbars{
+    display:flex; align-items:flex-end; gap:10px; height:70px; padding-bottom:18px;
+    border-bottom:1px solid var(--line-soft); position:relative;
+  }
+  .tbars .tbar{
+    flex:1; background:linear-gradient(180deg, var(--vermillion-soft), var(--vermillion));
+    border-radius:2px 2px 0 0; min-width:6px; position:relative;
+  }
+  .tbars .tbar.is-today{ background:linear-gradient(180deg, #C9A15A, #A8432B); }
+  .tbars .tbar span{
+    position:absolute; bottom:-18px; left:50%; transform:translateX(-50%);
+    font-size:9.5px; color:var(--ink-faint); white-space:nowrap;
+  }
+  #libraryList{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, 200px);
+    grid-auto-rows: 200px;
+    justify-content:start;
+    gap:16px;
+  }
   .book-card{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
-    padding:16px 18px; margin-bottom:10px; display:flex; align-items:flex-start; gap:14px;
+    padding:16px; display:flex; flex-direction:column; transition:border-color .12s;
+    width:200px; height:200px; box-sizing:border-box; overflow:hidden;
   }
+  .book-card:hover{ border-color:var(--vermillion-soft); }
   .book-card-main{ flex:1; min-width:0; }
   .book-title{
     font-family:"Noto Serif SC", serif; font-size:16px; font-weight:600; border:none; outline:none;
-    background:transparent; color:var(--ink); width:100%; margin-bottom:6px; cursor:pointer;
+    background:transparent; color:var(--ink); width:100%; margin-bottom:8px; cursor:text;
   }
-  .book-meta-row{ display:flex; gap:8px; margin-bottom:8px; }
+  .book-meta-row{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
   .book-meta-row input{
-    font-family:inherit; font-size:11.5px; color:var(--ink-soft); background:var(--paper);
-    border:1px solid var(--line); border-radius:var(--radius); padding:5px 9px; flex:1;
+    font-family:inherit; font-size:11px; color:var(--ink-soft); background:var(--paper);
+    border:1px solid var(--line); border-radius:12px; padding:4px 10px; flex:1; min-width:0; box-sizing:border-box;
   }
-  .book-stats{ font-size:11px; color:var(--ink-faint); }
-  .book-actions{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .book-stats{
+    font-size:11px; color:var(--ink-faint); margin-top:auto; padding-top:10px;
+    border-top:1px dashed var(--line-soft); line-height:1.6;
+  }
+  .book-actions{ display:flex; flex-direction:row; gap:8px; margin-top:12px; }
   .book-actions button{
-    font-family:inherit; font-size:11.5px; padding:6px 12px; border-radius:var(--radius); cursor:pointer;
+    font-family:inherit; font-size:11.5px; padding:7px 12px; border-radius:var(--radius); cursor:pointer;
   }
-  .book-open-btn{ background:var(--ink); color:var(--paper); border:none; white-space:nowrap; }
+  .book-open-btn{ background:var(--ink); color:var(--paper); border:none; white-space:nowrap; flex:1; }
   .book-open-btn:hover{ background:#413C33; }
-  .book-del-btn{ background:transparent; border:1px solid var(--line); color:var(--ink-faint); }
+  .book-del-btn{ background:transparent; border:1px solid var(--line); color:var(--ink-faint); flex:0 0 auto; width:34px; }
   .book-del-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
 </style>
 </head>
@@ -853,6 +904,44 @@
     <h1>稿 紙</h1>
     <div class="subtitle">你的所有作品</div>
   </div>
+
+  <div class="today-card">
+    <div class="today-head">
+      <h3>今日概覽</h3>
+      <div class="today-range" id="todayRange">尚未開始</div>
+    </div>
+    <div class="today-grid">
+      <div class="today-stat">
+        <div class="ts-icon">✎</div>
+        <div><div class="ts-label">碼字字數</div><div class="ts-value" id="todayChars">0<small>字</small></div></div>
+      </div>
+      <div class="today-stat">
+        <div class="ts-icon">⏱</div>
+        <div><div class="ts-label">碼字時長</div><div class="ts-value" id="todayDuration">0<small>分</small></div></div>
+      </div>
+      <div class="today-stat">
+        <div class="ts-icon">⚡</div>
+        <div><div class="ts-label">碼字速度</div><div class="ts-value" id="todaySpeed">0<small>/時</small></div></div>
+      </div>
+      <div class="today-stat">
+        <div class="ts-icon">◎</div>
+        <div><div class="ts-label">每日目標</div><div class="ts-value" id="todayGoalPct">0<small>%</small></div></div>
+      </div>
+      <div class="today-stat">
+        <div class="ts-icon">🔥</div>
+        <div><div class="ts-label">連續碼字</div><div class="ts-value" id="todayStreak">0<small>天</small></div></div>
+      </div>
+      <div class="today-stat">
+        <div class="ts-icon">📔</div>
+        <div><div class="ts-label">碼字書籍</div><div class="ts-value" id="todayBooks">0<small>本</small></div></div>
+      </div>
+    </div>
+    <div class="today-trend">
+      <div class="tt-label">近 7 日字數趨勢<span id="todayGoalEditHint">（每日目標可在「設定」調整）</span></div>
+      <div class="tbars" id="todayBars"></div>
+    </div>
+  </div>
+
   <button class="lib-add" id="newBookBtn">＋ 新增文章</button>
   <div id="libraryList"></div>
 </div>
@@ -1003,6 +1092,10 @@
         <span class="switch-track"></span>
       </label>
     </div>
+    <div class="setting-row">
+      <span>每日字數目標<small>用於「今日概覽」的完成度計算</small></span>
+      <input type="number" id="dailyGoalInput" min="1" step="100" style="width:80px; padding:6px 8px; font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); color:var(--ink); text-align:right;" />
+    </div>
     <button id="settingsCloseBtn">關閉</button>
   </div>
 </div>
@@ -1017,7 +1110,8 @@ function freshState(){
   return {
     currentBookId: null,
     books: [],
-    settings: { gridBg: false, keySound: false, sidebarCollapsed: false }
+    dailyLog: {},
+    settings: { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 }
   };
 }
 
@@ -1046,10 +1140,57 @@ function currentBook(){
 }
 
 function normalizeSettings(){
-  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false };
+  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
+  if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
+  if(!state.dailyLog) state.dailyLog = {};
+}
+
+/* ---------------- writing activity tracking ---------------- */
+function todayKey(d){
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function trackWriting(deltaChars){
+  if(deltaChars <= 0) return;
+  if(!state.dailyLog) state.dailyLog = {};
+  const key = todayKey();
+  if(!state.dailyLog[key]) state.dailyLog[key] = { chars: 0, activeMs: 0, firstTs: Date.now(), lastTs: Date.now(), bookIds: [] };
+  const entry = state.dailyLog[key];
+  const now = Date.now();
+  const gap = now - entry.lastTs;
+  if(gap > 0 && gap < 3 * 60 * 1000) entry.activeMs += gap;
+  entry.lastTs = now;
+  entry.chars += deltaChars;
+  if(state.currentBookId && !entry.bookIds.includes(state.currentBookId)) entry.bookIds.push(state.currentBookId);
+}
+
+function computeStreak(){
+  if(!state.dailyLog) return 0;
+  let streak = 0;
+  let d = new Date();
+  while(true){
+    const key = todayKey(d);
+    const entry = state.dailyLog[key];
+    if(entry && entry.chars > 0){ streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+function formatHM(ts){
+  const d = new Date(ts);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function formatDuration(ms){
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? `${h} 時 ${m} 分` : `${m} 分`;
 }
 
 function currentChapter(){
@@ -1221,7 +1362,13 @@ function renderRows(){
       renderSidebar();
     };
 
-    textArea.addEventListener('input', () => { captureForEdit(); sec.text = textArea.value; autoResize(textArea); updateCounts(); });
+    textArea.addEventListener('input', () => {
+      const oldLen = sec.text.length;
+      captureForEdit();
+      sec.text = textArea.value;
+      if(textArea.value.length > oldLen) trackWriting(textArea.value.length - oldLen);
+      autoResize(textArea); updateCounts();
+    });
     noteArea.addEventListener('input', () => { captureForEdit(); sec.note = noteArea.value; autoResize(noteArea); updateCounts(); });
 
     row.querySelector('[data-action="split"]').onclick = () => splitSection(sec.id, textArea.selectionStart);
@@ -1388,6 +1535,7 @@ function showLibrary(){
   document.getElementById('main').style.display = 'none';
   document.getElementById('library').style.display = 'block';
   state.currentBookId = null;
+  renderTodayOverview();
   renderLibrary();
 }
 
@@ -1400,6 +1548,44 @@ function openBook(id){
   undoStack = []; redoStack = []; pendingSnapshot = null;
   renderAll();
   showView('edit');
+}
+
+function renderTodayOverview(){
+  normalizeSettings();
+  const key = todayKey();
+  const entry = state.dailyLog[key] || { chars: 0, activeMs: 0, firstTs: null, lastTs: null, bookIds: [] };
+  const goal = state.settings.dailyGoal;
+  const pct = entry.chars > 0 ? Math.min(100, Math.round((entry.chars / goal) * 100)) : 0;
+  const hrs = entry.activeMs / 3600000;
+  const speed = hrs > (1/60) ? Math.round(entry.chars / hrs) : 0;
+
+  document.getElementById('todayRange').textContent = entry.firstTs
+    ? `${formatHM(entry.firstTs)} - ${formatHM(entry.lastTs)}`
+    : '今天還沒開始寫作';
+  document.getElementById('todayChars').innerHTML = entry.chars + '<small>字</small>';
+  document.getElementById('todayDuration').innerHTML = (entry.activeMs > 0 ? formatDuration(entry.activeMs) : '0<small>分</small>');
+  document.getElementById('todaySpeed').innerHTML = speed + '<small>/時</small>';
+  document.getElementById('todayGoalPct').innerHTML = pct + '<small>%</small>';
+  document.getElementById('todayStreak').innerHTML = computeStreak() + '<small>天</small>';
+  document.getElementById('todayBooks').innerHTML = entry.bookIds.length + '<small>本</small>';
+
+  const days = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = todayKey(d);
+    days.push({
+      label: (d.getMonth() + 1) + '/' + d.getDate(),
+      chars: (state.dailyLog[k] && state.dailyLog[k].chars) || 0,
+      isToday: i === 0
+    });
+  }
+  const max = Math.max(...days.map(d => d.chars), 1);
+  document.getElementById('todayBars').innerHTML = days.map(d => `
+    <div class="tbar${d.isToday ? ' is-today' : ''}" style="height:${Math.max(2, d.chars / max * 100)}%">
+      <span>${d.label}</span>
+    </div>
+  `).join('');
 }
 
 function renderLibrary(){
@@ -2160,8 +2346,10 @@ document.getElementById('doChangePw').onclick = async () => {
 
 /* ================= settings: grid background + key sound ================= */
 document.getElementById('settingsBtn').onclick = () => {
+  normalizeSettings();
   document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
+  document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   document.getElementById('settingsBackdrop').style.display = 'flex';
 };
 document.getElementById('settingsCloseBtn').onclick = () => { document.getElementById('settingsBackdrop').style.display = 'none'; };
@@ -2180,6 +2368,13 @@ document.getElementById('toggleKeySound').addEventListener('change', e => {
   schedulePersist();
   if(e.target.checked) playKeySound();
 });
+document.getElementById('dailyGoalInput').addEventListener('change', e => {
+  normalizeSettings();
+  const v = parseInt(e.target.value, 10);
+  state.settings.dailyGoal = (v > 0) ? v : 1000;
+  e.target.value = state.settings.dailyGoal;
+  schedulePersist();
+});
 
 document.getElementById('sidebarToggleBtn').onclick = () => {
   normalizeSettings();
@@ -2195,34 +2390,43 @@ function playKeySound(){
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const t = audioCtx.currentTime;
 
-    // 機械噪音脈衝：模擬打字機字鎚敲擊瞬間的「啪」
-    const bufferSize = Math.floor(audioCtx.sampleRate * 0.035);
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i = 0; i < bufferSize; i++){
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2.2);
+    function strike(atTime, vol){
+      // 機械噪音脈衝：模擬字鎚敲擊瞬間的「喀」，比之前更短更尖銳
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.02);
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i = 0; i < bufferSize; i++){
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3.5);
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 3200 + Math.random() * 1400;
+      bandpass.Q.value = 0.9;
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 1500;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(vol, atTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, atTime + 0.018);
+      noise.connect(bandpass).connect(highpass).connect(noiseGain).connect(audioCtx.destination);
+      noise.start(atTime);
+      noise.stop(atTime + 0.02);
     }
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buffer;
-    const bandpass = audioCtx.createBiquadFilter();
-    bandpass.type = 'bandpass';
-    bandpass.frequency.value = 2200 + Math.random() * 900;
-    bandpass.Q.value = 1.1;
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.setValueAtTime(0.32, t);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.032);
-    noise.connect(bandpass).connect(noiseGain).connect(audioCtx.destination);
-    noise.start(t);
-    noise.stop(t + 0.035);
+
+    // 主要撞擊聲，隨機再疊一次極輕的回彈聲增加機械質感
+    strike(t, 0.4);
+    if(Math.random() > 0.5) strike(t + 0.012, 0.08);
 
     // 低頻「噠」：模擬字鎚打在滾筒上的重量感
     const osc = audioCtx.createOscillator();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(150 + Math.random() * 25, t + 0.006);
+    osc.frequency.setValueAtTime(150 + Math.random() * 25, t + 0.004);
     const oscGain = audioCtx.createGain();
     oscGain.gain.setValueAtTime(0.001, t);
-    oscGain.gain.setValueAtTime(0.16, t + 0.006);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    oscGain.gain.setValueAtTime(0.14, t + 0.004);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
     osc.connect(oscGain).connect(audioCtx.destination);
     osc.start(t);
     osc.stop(t + 0.055);
