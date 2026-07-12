@@ -6,6 +6,7 @@
 <title>稿紙 · 寫作軟件</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#FAF6EE">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
@@ -148,6 +149,21 @@
     border-bottom: 1px solid var(--line);
     background: var(--paper);
     flex-shrink:0;
+  }
+  #bookNameTag{
+    font-family:"Noto Sans SC", sans-serif;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--vermillion);
+    background:var(--vermillion-bg);
+    border:1px solid #E4C3B6;
+    border-radius:12px;
+    padding:4px 12px;
+    flex-shrink:0;
+    white-space:nowrap;
+    max-width:160px;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
   #chapterTitle{
     font-family:"Noto Serif SC", serif;
@@ -838,6 +854,7 @@
 
 <div id="main">
   <div id="topbar">
+    <span id="bookNameTag"></span>
     <input id="chapterTitle" />
     <div class="col-headers">
       <span></span><span>正文</span><span></span><span>備註</span>
@@ -1331,6 +1348,7 @@ function renderAll(){
   const ch = currentChapter();
   document.getElementById('chapterTitle').value = ch.title;
   document.getElementById('currentBookLabel').textContent = currentBook().title;
+  document.getElementById('bookNameTag').textContent = '📖 ' + currentBook().title;
   renderSidebar();
   renderRows();
   updateStrip();
@@ -1408,7 +1426,9 @@ function renderLibrary(){
 }
 
 document.getElementById('newBookBtn').onclick = () => {
-  const book = freshBook('未命名作品');
+  const title = window.prompt('為這本新作品取個名字：', '');
+  if(title === null) return; // 使用者取消
+  const book = freshBook(title.trim() || '未命名作品');
   state.books.push(book);
   schedulePersist();
   openBook(book.id);
