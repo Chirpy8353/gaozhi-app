@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>稿紙 · 寫作軟件</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FAF6EE">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #FAF6EE;
+    --paper-note: #F1EAD9;
+    --ink: #2A2721;
+    --ink-soft: #8C8574;
+    --ink-faint: #B5AD9B;
+    --line: #DED4BE;
+    --line-soft: #EAE2CF;
+    --vermillion: #A8432B;
+    --vermillion-soft: #C97456;
+    --vermillion-bg: #F4E4DD;
+    --sidebar: #F3EEE1;
+    --white: #FFFEFB;
+    --radius: 3px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans SC", sans-serif;
+    height:100vh;
+    overflow:hidden;
+  }
+  #appRoot{
+    display:none;
+    height:100vh;
+  }
+  #appRoot.active{ display:flex; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width: 220px;
+    flex-shrink:0;
+    background: var(--sidebar);
+    border-right: 1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    padding: 20px 14px;
+  }
+  #sidebar h1{
+    font-family:"Noto Serif SC", serif;
+    font-size: 15px;
+    font-weight:700;
+    letter-spacing: 2px;
+    margin: 0 0 2px 4px;
+    color: var(--ink);
+  }
+  #sidebar .subtitle{
+    font-size:11px;
+    color: var(--ink-faint);
+    margin: 0 0 22px 4px;
+    letter-spacing:1px;
+  }
+  .chapter-list{
+    list-style:none;
+    margin:0; padding:0;
+    flex:1;
+    overflow-y:auto;
+  }
+  .chapter-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 10px;
+    border-radius: var(--radius);
+    cursor:pointer;
+    font-size:13px;
+    color: var(--ink-soft);
+    margin-bottom:2px;
+    border-left: 2px solid transparent;
+    transition: background .12s ease;
+  }
+  .chapter-item:hover{ background: rgba(168,67,43,0.06); }
+  .chapter-item.active{
+    background: var(--white);
+    color: var(--ink);
+    border-left: 2px solid var(--vermillion);
+    font-weight:600;
+  }
+  .chapter-item .cnt{
+    margin-left:auto;
+    font-size:10.5px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  #addChapterBtn{
+    margin-top:10px;
+    border: 1px dashed var(--line);
+    background:transparent;
+    color: var(--ink-soft);
+    font-size:12px;
+    padding:8px;
+    border-radius: var(--radius);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #addChapterBtn:hover{ border-color: var(--vermillion-soft); color: var(--vermillion); }
+
+  .nav-btn{
+    width:100%;
+    margin-top:8px;
+    padding:9px;
+    background: var(--white);
+    color: var(--ink-soft);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    font-size:12.5px;
+    letter-spacing:1px;
+    cursor:pointer;
+    font-family:inherit;
+    text-align:left;
+  }
+  .nav-btn:hover{ border-color: var(--vermillion-soft); color: var(--vermillion); }
+  #overviewBtn{
+    background: var(--ink);
+    color: var(--paper);
+    border:none;
+    text-align:center;
+    margin-top:16px;
+  }
+  #overviewBtn:hover{ background:#413C33; color:var(--paper); }
+
+  /* ---------- Main ---------- */
+  #main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  #topbar{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    flex-shrink:0;
+  }
+  #chapterTitle{
+    font-family:"Noto Serif SC", serif;
+    font-size:18px;
+    font-weight:600;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    outline:none;
+    flex-shrink:0;
+    width: 260px;
+  }
+  .col-headers{
+    display:grid;
+    grid-template-columns: 34px 1fr 1px 260px;
+    gap:0 14px;
+    flex:1;
+    font-size:11px;
+    color: var(--ink-faint);
+    letter-spacing:1px;
+  }
+  .col-headers span:nth-child(2){ padding-left:2px; }
+  .col-headers span:nth-child(4){ padding-left:14px; border-left:1px solid var(--line-soft); }
+
+  #modeSelect{
+    font-family:inherit;
+    font-size:11.5px;
+    color: var(--ink-soft);
+    background: var(--white);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding:5px 8px;
+  }
+  #autosaveTag{
+    font-size:11px;
+    color: var(--ink-faint);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  #autosaveTag .dot{
+    display:inline-block;
+    width:5px;height:5px;
+    border-radius:50%;
+    background: #7A9A6D;
+    margin-right:5px;
+  }
+  #endSessionBtn{
+    flex-shrink:0;
+    background: var(--vermillion-bg);
+    color: var(--vermillion);
+    border:1px solid #E4C3B6;
+    padding:6px 12px;
+    font-size:11.5px;
+    border-radius: var(--radius);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #endSessionBtn:hover{ background:#EED3C8; }
+
+  .hist-btn{
+    flex-shrink:0;
+    background: var(--white);
+    border:1px solid var(--line);
+    color: var(--ink-soft);
+    width:28px; height:28px;
+    border-radius: var(--radius);
+    cursor:pointer;
+    font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .hist-btn:hover{ border-color: var(--vermillion-soft); color: var(--vermillion); }
+  .hist-btn:disabled{ opacity:.35; cursor:default; }
+  .hist-btn:disabled:hover{ border-color:var(--line); color:var(--ink-soft); }
+
+  #stats-strip{
+    display:flex;
+    gap:22px;
+    padding:8px 28px;
+    font-size:11.5px;
+    color: var(--ink-soft);
+    border-bottom:1px solid var(--line-soft);
+    flex-shrink:0;
+    background: var(--paper);
+  }
+  #stats-strip b{ color: var(--ink); font-weight:600; }
+
+  #rows{
+    flex:1;
+    overflow-y:auto;
+    padding: 18px 28px 80px;
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns: 34px 1fr 1px 260px;
+    gap: 0 14px;
+    margin-bottom: 4px;
+    position:relative;
+    border-radius: var(--radius);
+  }
+  .row.dragging{ opacity:0.35; }
+  .row.drag-over-top{ box-shadow: inset 0 2px 0 var(--vermillion); }
+  .row.drag-over-bottom{ box-shadow: inset 0 -2px 0 var(--vermillion); }
+
+  .row-gutter{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top:6px;
+    gap:8px;
+  }
+  .seal{
+    width:22px; height:22px;
+    border:1.3px solid var(--vermillion-soft);
+    color: var(--vermillion);
+    border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px;
+    font-weight:600;
+    font-family:"Noto Serif SC", serif;
+    flex-shrink:0;
+    user-select:none;
+  }
+  .drag-handle{
+    cursor: grab;
+    color: var(--ink-faint);
+    font-size:13px;
+    letter-spacing:1px;
+    line-height:1;
+    padding:2px;
+    user-select:none;
+  }
+  .drag-handle:active{ cursor:grabbing; }
+
+  .gutter-btns{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    opacity:0;
+    transition:opacity .12s;
+  }
+  .row:hover .gutter-btns{ opacity:1; }
+  .gbtn{
+    width:20px; height:16px;
+    border:1px solid var(--line);
+    background: var(--white);
+    color: var(--ink-faint);
+    font-size:8px;
+    border-radius:2px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  .gbtn:hover{ border-color: var(--vermillion-soft); color: var(--vermillion); }
+
+  .cell{
+    background: var(--white);
+    border:1px solid var(--line-soft);
+    border-radius: var(--radius);
+    padding: 12px 14px 8px;
+  }
+  .left-cell{ padding-right:14px; }
+  .right-cell{
+    background: var(--paper-note);
+    border-color: #E6D9C3;
+  }
+  .row-divider{ background: var(--line-soft); }
+
+  textarea{
+    width:100%;
+    border:none;
+    outline:none;
+    background:transparent;
+    resize:none;
+    color: var(--ink);
+    font-family:"Noto Serif SC", serif;
+    font-size:15px;
+    line-height:1.9;
+    overflow:hidden;
+    display:block;
+  }
+  .right-cell textarea{
+    font-family:"Noto Sans SC", sans-serif;
+    font-size:12.5px;
+    line-height:1.75;
+    color: #6B5F45;
+  }
+  .right-cell textarea::placeholder{ color: var(--ink-faint); }
+  .left-cell textarea::placeholder{ color: var(--ink-faint); font-family:"Noto Sans SC", sans-serif; font-size:13px; }
+
+  .cell-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+    padding-top:6px;
+    border-top: 1px dashed var(--line-soft);
+    font-size:10.5px;
+    color: var(--ink-faint);
+  }
+  .row-actions{
+    display:flex;
+    gap:6px;
+  }
+  .row-actions button{
+    font-family:inherit;
+    font-size:10.5px;
+    background:transparent;
+    border:1px solid var(--line);
+    color: var(--ink-soft);
+    padding:3px 7px;
+    border-radius: var(--radius);
+    cursor:pointer;
+    opacity:0;
+    transition: opacity .12s;
+  }
+  .row:hover .row-actions button{ opacity:1; }
+  .row-actions button:hover{ border-color: var(--vermillion-soft); color: var(--vermillion); }
+
+  .add-row-hint{
+    text-align:center;
+    padding: 14px;
+    color: var(--ink-faint);
+    font-size:12px;
+    cursor:pointer;
+    border:1px dashed var(--line);
+    border-radius: var(--radius);
+    margin-top:10px;
+  }
+  .add-row-hint:hover{ color:var(--vermillion); border-color: var(--vermillion-soft); }
+
+  /* thread linking animation on drag */
+  .thread{
+    position:absolute;
+    left:44px; right:274px; top:50%;
+    height:0;
+    border-top: 1px dashed transparent;
+    pointer-events:none;
+  }
+  .row.dragging .thread,
+  .row:hover .thread{
+    border-top-color: rgba(168,67,43,0.35);
+  }
+
+  /* ---------- Overview ---------- */
+  #overview{ display:none; padding: 26px 32px; overflow-y:auto; }
+  #overview h2{
+    font-family:"Noto Serif SC", serif;
+    font-size:19px; margin:0 0 4px;
+  }
+  #overview .ov-sub{ color:var(--ink-faint); font-size:12px; margin-bottom:22px; }
+  table.ov-table{
+    width:100%;
+    border-collapse: collapse;
+    font-size:13px;
+    margin-bottom:32px;
+    background:var(--white);
+  }
+  table.ov-table th, table.ov-table td{
+    text-align:left;
+    padding:9px 14px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  table.ov-table th{
+    color:var(--ink-faint);
+    font-weight:500;
+    font-size:11px;
+    letter-spacing:1px;
+  }
+  table.ov-table td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  table.ov-table tr.total td{ font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; }
+
+  .chart-block h3{
+    font-size:13px; color:var(--ink-soft); font-weight:600; margin:0 0 4px;
+  }
+  .chart-note{ font-size:11px; color:var(--ink-faint); margin-bottom:14px; }
+  .bars{
+    display:flex; align-items:flex-end; gap:10px; height:140px;
+    padding: 0 4px 24px; border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .bar{
+    flex:1;
+    background: linear-gradient(180deg, var(--vermillion-soft), var(--vermillion));
+    border-radius: 2px 2px 0 0;
+    position:relative;
+    min-width:8px;
+  }
+  .bar span{
+    position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);
+    font-size:10px; color:var(--ink-faint); white-space:nowrap;
+  }
+
+  #closeOverview, #closeForeshadow{
+    background:transparent; border:1px solid var(--line); color:var(--ink-soft);
+    padding:6px 12px; border-radius:var(--radius); font-size:12px; cursor:pointer;
+    font-family:inherit; margin-bottom:18px;
+  }
+
+  /* ---------- Foreshadow ---------- */
+  #foreshadow{ display:none; padding: 26px 32px; overflow-y:auto; }
+  #foreshadow h2{ font-family:"Noto Serif SC", serif; font-size:19px; margin:0 0 4px; }
+  #foreshadow .ov-sub{ color:var(--ink-faint); font-size:12px; margin-bottom:20px; }
+  .fs-add{
+    border:1px dashed var(--line); background:transparent; color:var(--ink-soft);
+    padding:9px 14px; border-radius:var(--radius); font-size:12.5px; cursor:pointer;
+    font-family:inherit; margin-bottom:18px;
+  }
+  .fs-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .fs-card{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:10px;
+    display:grid; grid-template-columns: 1fr 140px 110px 120px 28px; gap:10px; align-items:start;
+  }
+  .fs-title{
+    font-family:"Noto Serif SC", serif; font-size:14px; border:none; outline:none;
+    background:transparent; color:var(--ink); width:100%; margin-bottom:6px;
+  }
+  .fs-desc{
+    font-family:"Noto Sans SC", sans-serif; font-size:12px; color:var(--ink-soft);
+    border:none; outline:none; background:transparent; width:100%; resize:none; line-height:1.6;
+  }
+  .fs-chapter, .fs-section, .fs-status{
+    font-family:inherit; font-size:12px; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:6px 8px;
+  }
+  .fs-status[data-status="埋下"]{ color:var(--vermillion); border-color:var(--vermillion-soft); background:var(--vermillion-bg); }
+  .fs-status[data-status="已回收"]{ color:#4C7A3E; border-color:#B9D1AC; background:#E5EEDF; }
+  .fs-status[data-status="已放棄"]{ color:var(--ink-faint); border-color:var(--line); background:var(--line-soft); }
+  .fs-del{
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint);
+    width:26px; height:26px; border-radius:var(--radius); cursor:pointer; font-size:12px;
+  }
+  .fs-del:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+
+  /* ---------- Version history ---------- */
+  #history{ display:none; padding: 26px 32px; overflow-y:auto; }
+  #history h2{ font-family:"Noto Serif SC", serif; font-size:19px; margin:0 0 4px; }
+  #history .ov-sub{ color:var(--ink-faint); font-size:12px; margin-bottom:18px; }
+  .hist-add{
+    border:1px dashed var(--line); background:transparent; color:var(--ink-soft);
+    padding:9px 14px; border-radius:var(--radius); font-size:12.5px; cursor:pointer;
+    font-family:inherit; margin-bottom:18px;
+  }
+  .hist-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .hv-item{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:12px 16px; margin-bottom:8px;
+  }
+  .hv-row{ display:flex; align-items:center; gap:12px; }
+  .hv-label{ font-family:"Noto Serif SC", serif; font-size:13.5px; color:var(--ink); }
+  .hv-time{ font-size:11px; color:var(--ink-faint); }
+  .hv-wc{ font-size:11.5px; color:var(--ink-soft); margin-left:auto; }
+  .hv-actions{ display:flex; gap:6px; }
+  .hv-actions button{
+    font-family:inherit; font-size:11px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); padding:4px 9px; border-radius:var(--radius); cursor:pointer;
+  }
+  .hv-actions button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .hv-diff{ display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line-soft); }
+  .hv-diff.open{ display:block; }
+  .diff-chapter-row{ border:1px solid var(--line-soft); border-radius:var(--radius); margin-bottom:8px; background:var(--white); }
+  .dc-head{ display:flex; align-items:center; gap:10px; padding:9px 12px; }
+  .dc-title{ font-family:"Noto Serif SC", serif; font-size:13px; color:var(--ink); }
+  .dc-delta{ margin-left:auto; font-size:11px; font-variant-numeric:tabular-nums; }
+  .dc-head button{
+    font-family:inherit; font-size:10.5px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); padding:3px 8px; border-radius:var(--radius); cursor:pointer;
+  }
+  .dc-head button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .dc-body{ display:none; padding: 4px 14px 12px; border-top:1px dashed var(--line-soft); }
+  .dc-body.open{ display:block; }
+  .diff-section{ margin-top:10px; }
+  .diff-section-label{ font-size:10.5px; color:var(--ink-faint); margin-bottom:4px; }
+  .diff-text{
+    font-family:"Noto Serif SC", serif; font-size:13px; line-height:1.9; color:var(--ink);
+    white-space:pre-wrap; word-break:break-word;
+  }
+  ins.d-add{ background:#DCEEDA; color:#2F5C28; text-decoration:none; padding:0 1px; border-radius:2px; }
+  del.d-del{ background:#F6DED6; color:var(--vermillion); text-decoration:line-through; padding:0 1px; border-radius:2px; }
+  .diff-pos{ color:#4C7A3E; } .diff-neg{ color:var(--vermillion); } .diff-zero{ color:var(--ink-faint); }
+
+  /* ---------- Character management ---------- */
+  #characters{ display:none; padding: 26px 32px; overflow-y:auto; }
+  #characters h2{ font-family:"Noto Serif SC", serif; font-size:19px; margin:0 0 4px; }
+  #characters .ov-sub{ color:var(--ink-faint); font-size:12px; margin-bottom:18px; }
+  .char-add{
+    border:1px dashed var(--line); background:transparent; color:var(--ink-soft);
+    padding:9px 14px; border-radius:var(--radius); font-size:12.5px; cursor:pointer;
+    font-family:inherit; margin-bottom:18px;
+  }
+  .char-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .char-card{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .char-head{ display:flex; gap:10px; margin-bottom:8px; align-items:center; }
+  .char-name{
+    font-family:"Noto Serif SC", serif; font-size:15px; font-weight:600; border:none; outline:none;
+    background:transparent; color:var(--ink); flex:1;
+  }
+  .char-tag{
+    font-family:inherit; font-size:11.5px; color:var(--vermillion); background:var(--vermillion-bg);
+    border:1px solid #E4C3B6; border-radius:12px; padding:4px 10px; width:140px;
+  }
+  .char-del{
+    border:1px solid var(--line); background:transparent; color:var(--ink-faint);
+    width:26px; height:26px; border-radius:var(--radius); cursor:pointer; font-size:12px; flex-shrink:0;
+  }
+  .char-del:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .char-desc{
+    width:100%; font-family:"Noto Sans SC", sans-serif; font-size:12.5px; color:var(--ink-soft);
+    border:none; outline:none; background:transparent; resize:none; line-height:1.7;
+  }
+
+  /* ---------- Export modal ---------- */
+  #exportBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:50; align-items:center; justify-content:center;
+  }
+  #exportModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:360px; max-height:80vh; overflow-y:auto; padding:22px;
+  }
+  #exportModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 4px; }
+  #exportModal .ov-sub{ color:var(--ink-faint); font-size:11.5px; margin-bottom:16px; }
+  .export-scope{ display:flex; gap:8px; margin-bottom:14px; }
+  .export-scope button{
+    flex:1; padding:7px; font-size:12px; border:1px solid var(--line); background:var(--white);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit;
+  }
+  .export-scope button.active{ border-color:var(--vermillion); color:var(--vermillion); background:var(--vermillion-bg); }
+  .export-list{ max-height:180px; overflow-y:auto; border:1px solid var(--line-soft); border-radius:var(--radius); padding:8px 10px; margin-bottom:16px; }
+  .export-list label{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:5px 0; color:var(--ink); }
+  .export-actions{ display:flex; gap:8px; justify-content:flex-end; }
+  .export-actions button{
+    padding:8px 14px; font-size:12.5px; border-radius:var(--radius); cursor:pointer; font-family:inherit;
+  }
+  #exportCancel{ background:transparent; border:1px solid var(--line); color:var(--ink-soft); }
+  #exportConfirm{ background:var(--ink); border:none; color:var(--paper); }
+  #exportConfirm:hover{ background:#413C33; }
+
+  ::-webkit-scrollbar{ width:9px; }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius:5px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  /* ---------- Gate (password lock screen) ---------- */
+  #gate{
+    position:fixed; inset:0; background:var(--paper); z-index:100;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .gate-box{
+    width:360px; max-width:90vw; padding:0 8px;
+  }
+  .gate-box h1{
+    font-family:"Noto Serif SC", serif; font-size:26px; letter-spacing:3px; margin:0 0 6px; text-align:center;
+  }
+  .gate-sub{ text-align:center; color:var(--ink-faint); font-size:12px; margin-bottom:28px; }
+  .gate-field{ margin-bottom:14px; }
+  .gate-field label{ display:block; font-size:12px; color:var(--ink-soft); margin-bottom:5px; }
+  .gate-field input[type="password"], .gate-field input[type="text"], .gate-field input[type="file"]{
+    width:100%; padding:10px 12px; font-size:14px; font-family:inherit;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    box-sizing:border-box;
+  }
+  .gate-warn{
+    font-size:11.5px; color:var(--vermillion); background:var(--vermillion-bg);
+    border:1px solid #E4C3B6; border-radius:var(--radius); padding:10px 12px; margin-bottom:16px; line-height:1.6;
+  }
+  .gate-error{ font-size:12px; color:var(--vermillion); min-height:16px; margin-bottom:8px; }
+  .gate-submit{
+    width:100%; padding:11px; background:var(--ink); color:var(--paper); border:none;
+    border-radius:var(--radius); font-size:13.5px; letter-spacing:1px; cursor:pointer; font-family:inherit;
+  }
+  .gate-submit:hover{ background:#413C33; }
+  .gate-switch{
+    text-align:center; margin-top:18px; font-size:12px; color:var(--ink-faint);
+  }
+  .gate-switch a{ color:var(--vermillion); cursor:pointer; text-decoration:underline; }
+  #gate-loading{ text-align:center; color:var(--ink-faint); font-size:13px; }
+  .gate-import-panel{ display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line); }
+  .gate-import-panel.open{ display:block; }
+
+  /* ---------- Backup modal ---------- */
+  #backupBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:50; align-items:center; justify-content:center;
+  }
+  #backupModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:400px; max-height:85vh; overflow-y:auto; padding:22px;
+  }
+  #backupModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 16px; }
+  .backup-section{ border-top:1px dashed var(--line-soft); padding-top:14px; margin-top:14px; }
+  .backup-section:first-of-type{ border-top:none; margin-top:0; padding-top:0; }
+  .backup-section h4{ font-size:12.5px; color:var(--ink); margin:0 0 4px; }
+  .backup-section p{ font-size:11.5px; color:var(--ink-faint); margin:0 0 10px; line-height:1.6; }
+  .backup-section input{
+    width:100%; padding:8px 10px; font-size:12.5px; font-family:inherit; margin-bottom:8px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    box-sizing:border-box;
+  }
+  .backup-btn{
+    padding:8px 14px; font-size:12px; border-radius:var(--radius); cursor:pointer; font-family:inherit;
+    background:var(--white); border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .backup-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .backup-btn.primary{ background:var(--ink); color:var(--paper); border:none; }
+  .backup-btn.primary:hover{ background:#413C33; }
+  .backup-btn.danger{ color:var(--vermillion); }
+  .backup-msg{ font-size:11.5px; margin-top:6px; min-height:14px; }
+  #backupClose{
+    width:100%; margin-top:16px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
+
+  /* ---------- Grid paper background (稿紙格) ---------- */
+  #rows.grid-mode .left-cell textarea{
+    background-image:
+      repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px),
+      repeating-linear-gradient(to right, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px);
+    background-position: 0 3px, 2px 0;
+    line-height: 28px;
+  }
+
+  /* ---------- Settings modal ---------- */
+  #settingsBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:50; align-items:center; justify-content:center;
+  }
+  #settingsModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:320px; padding:22px;
+  }
+  #settingsModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 16px; }
+  .setting-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-top:1px dashed var(--line-soft);
+  }
+  .setting-row:first-of-type{ border-top:none; }
+  .setting-row span{ font-size:13px; color:var(--ink); }
+  .setting-row small{ display:block; font-size:11px; color:var(--ink-faint); margin-top:2px; }
+  .switch{
+    position:relative; width:38px; height:22px; flex-shrink:0; margin-left:12px;
+  }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-track{
+    position:absolute; inset:0; background:var(--line); border-radius:12px; cursor:pointer; transition:.15s;
+  }
+  .switch-track::before{
+    content:""; position:absolute; width:16px; height:16px; left:3px; top:3px;
+    background:var(--white); border-radius:50%; transition:.15s;
+  }
+  .switch input:checked + .switch-track{ background:var(--vermillion); }
+  .switch input:checked + .switch-track::before{ transform:translateX(16px); }
+  #settingsCloseBtn{
+    width:100%; margin-top:16px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-box">
+
+    <div id="gate-loading">
+      <h1>稿 紙</h1>
+      <div class="gate-sub">正在讀取本機資料庫…</div>
+    </div>
+
+    <div id="gate-setup" style="display:none;">
+      <h1>稿 紙</h1>
+      <div class="gate-sub">第一次使用，請設定一組密碼</div>
+      <div class="gate-warn">此密碼用於端對端加密你的所有內容，僅存在於你的裝置上。<b>忘記密碼將無法救回任何資料</b>，請務必妥善保管，建議另外抄錄在安全的地方。</div>
+      <form id="setupForm">
+        <div class="gate-field">
+          <label>設定密碼（至少 6 個字元）</label>
+          <input type="password" id="setupPw" autocomplete="new-password" required />
+        </div>
+        <div class="gate-field">
+          <label>再次輸入密碼</label>
+          <input type="password" id="setupPw2" autocomplete="new-password" required />
+        </div>
+        <div class="gate-error" id="setupError"></div>
+        <button type="submit" class="gate-submit">開始使用</button>
+      </form>
+      <div class="gate-switch">已有備份檔？<a id="showImportPanel">從備份檔匯入</a></div>
+
+      <div class="gate-import-panel" id="importPanel">
+        <form id="setupImportForm">
+          <div class="gate-field">
+            <label>選擇備份檔案</label>
+            <input type="file" id="setupImportFile" accept=".json,.txt" required />
+          </div>
+          <div class="gate-field">
+            <label>該備份檔的密碼</label>
+            <input type="password" id="setupImportPw" required />
+          </div>
+          <div class="gate-error" id="setupImportError"></div>
+          <button type="submit" class="gate-submit">匯入並開始使用</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="gate-unlock" style="display:none;">
+      <h1>稿 紙</h1>
+      <div class="gate-sub">輸入密碼以解鎖</div>
+      <form id="unlockForm">
+        <div class="gate-field">
+          <label>密碼</label>
+          <input type="password" id="unlockPw" autocomplete="current-password" required />
+        </div>
+        <div class="gate-error" id="unlockError"></div>
+        <button type="submit" class="gate-submit">解鎖</button>
+      </form>
+      <div class="gate-switch">忘記密碼將無法救回本機資料；若其他裝置上有備份檔，可清除本機資料後重新匯入。</div>
+    </div>
+
+  </div>
+</div>
+
+<div id="appRoot">
+
+<div id="sidebar">
+  <h1>稿 紙</h1>
+
+  <div class="subtitle">寫作軟件原型 · 互動 Demo</div>
+  <ul class="chapter-list" id="chapterList"></ul>
+  <button id="addChapterBtn">+ 新增章節</button>
+  <button id="foreshadowBtn" class="nav-btn">🧵 伏筆管理</button>
+  <button id="characterBtn" class="nav-btn">👤 角色管理</button>
+  <button id="historyBtn" class="nav-btn">🕘 版本歷史</button>
+  <button id="exportBtn" class="nav-btn">⇩ 匯出文檔</button>
+  <button id="backupBtn" class="nav-btn">🔒 備份與還原</button>
+  <button id="lockBtn" class="nav-btn">🔐 鎖定</button>
+  <button id="settingsBtn" class="nav-btn">⚙ 設定</button>
+  <button id="overviewBtn">📖 全書總覽</button>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <input id="chapterTitle" />
+    <div class="col-headers">
+      <span></span><span>正文</span><span></span><span>備註</span>
+    </div>
+    <select id="modeSelect">
+      <option value="auto">字數：自動</option>
+      <option value="cjk">中文字數（含標點）</option>
+      <option value="cjkOnly">純中文字符</option>
+      <option value="enWords">英文單詞數</option>
+    </select>
+    <button class="hist-btn" id="undoBtn" title="撤銷 (Ctrl+Z)">↶</button>
+    <button class="hist-btn" id="redoBtn" title="重做 (Ctrl+Shift+Z)">↷</button>
+    <span id="autosaveTag"><span class="dot"></span>已自動保存</span>
+    <button id="endSessionBtn">結束本次寫作</button>
+  </div>
+  <div id="stats-strip">
+    <span>本章字數 <b id="chapterWordCount">0</b></span>
+    <span>本章節數 <b id="chapterSectionCount">0</b></span>
+    <span>全書字數 <b id="bookWordCount">0</b></span>
+  </div>
+  <div id="rows"></div>
+
+  <div id="overview">
+    <button id="closeOverview">← 返回寫作</button>
+    <h2>全書總覽</h2>
+    <div class="ov-sub">此為原型示範，實際版本將接入堅果雲同步與每日寫作記錄</div>
+    <table class="ov-table" id="ovTable"></table>
+    <div class="chart-block">
+      <h3>每日字數趨勢</h3>
+      <div class="chart-note">示範數據 · 實際版本將依真實寫作記錄統計</div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+
+  <div id="foreshadow">
+    <button id="closeForeshadow">← 返回寫作</button>
+    <h2>伏筆管理</h2>
+    <div class="ov-sub">記錄埋下的伏筆、關聯章節（可細至第幾節）與回收狀態</div>
+    <button class="fs-add" id="fsAdd">+ 新增伏筆</button>
+    <div id="fsList"></div>
+  </div>
+
+  <div id="characters">
+    <button id="closeCharacters">← 返回寫作</button>
+    <h2>角色管理</h2>
+    <div class="ov-sub">記錄人物身份、關係與設定</div>
+    <button class="char-add" id="charAdd">+ 新增角色</button>
+    <div id="charList"></div>
+  </div>
+
+  <div id="history">
+    <button id="closeHistory">← 返回寫作</button>
+    <h2>版本歷史</h2>
+    <div class="ov-sub">「結束本次寫作」時自動固化一版；也可隨時手動備份。版本長期保留</div>
+    <button class="hist-add" id="histAdd">＋ 手動備份目前版本</button>
+    <div id="histList"></div>
+  </div>
+</div>
+
+</div>
+
+<div id="exportBackdrop">
+  <div id="exportModal">
+    <h3>匯出文檔</h3>
+    <div class="ov-sub">選擇範圍後下載為文字檔</div>
+    <div class="export-scope">
+      <button id="scopeAll" class="active">全文</button>
+      <button id="scopeSelect">選定章節</button>
+    </div>
+    <div class="export-list" id="exportList"></div>
+    <div class="export-actions">
+      <button id="exportCancel">取消</button>
+      <button id="exportConfirm">下載 .txt</button>
+    </div>
+  </div>
+</div>
+
+<div id="backupBackdrop">
+  <div id="backupModal">
+    <h3>備份與還原</h3>
+
+    <div class="backup-section">
+      <h4>匯出加密備份檔</h4>
+      <p>下載一份加密備份檔（.json），可手動放進堅果雲／Google Drive 等雲端資料夾，在其他裝置上用同一組密碼匯入以同步內容。</p>
+      <button class="backup-btn primary" id="doExportBackup">下載備份檔</button>
+      <div class="backup-msg" id="exportBackupMsg"></div>
+    </div>
+
+    <div class="backup-section">
+      <h4>從備份檔還原</h4>
+      <p>選擇備份檔並輸入該檔案的密碼，將會覆蓋目前裝置上的所有內容，請先確認。</p>
+      <input type="file" id="restoreFile" accept=".json,.txt" />
+      <input type="password" id="restorePw" placeholder="備份檔的密碼" />
+      <button class="backup-btn" id="doRestoreBackup">還原（覆蓋目前內容）</button>
+      <div class="backup-msg" id="restoreBackupMsg"></div>
+    </div>
+
+    <div class="backup-section">
+      <h4>更改密碼</h4>
+      <input type="password" id="newPw1" placeholder="新密碼（至少 6 個字元）" />
+      <input type="password" id="newPw2" placeholder="再次輸入新密碼" />
+      <button class="backup-btn" id="doChangePw">更改密碼</button>
+      <div class="backup-msg" id="changePwMsg"></div>
+    </div>
+
+    <button id="backupClose">關閉</button>
+  </div>
+</div>
+
+<div id="settingsBackdrop">
+  <div id="settingsModal">
+    <h3>設定</h3>
+    <div class="setting-row">
+      <span>格子背景<small>正文欄位顯示稿紙格線</small></span>
+      <label class="switch">
+        <input type="checkbox" id="toggleGridBg" />
+        <span class="switch-track"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <span>鍵盤音效<small>打字時發出輕微敲擊聲</small></span>
+      <label class="switch">
+        <input type="checkbox" id="toggleKeySound" />
+        <span class="switch-track"></span>
+      </label>
+    </div>
+    <button id="settingsCloseBtn">關閉</button>
+  </div>
+</div>
+
+<script>
+let idSeed = 1;
+const newId = () => 'id' + (idSeed++);
+
+let state = null;
+
+function freshState(){
+  const chapterId = newId();
+  return {
+    currentChapterId: chapterId,
+    wordMode: 'auto',
+    chapters: [
+      { id: chapterId, title: '第一章', sections: [ { id: newId(), text: '', note: '' } ] }
+    ],
+    foreshadows: [],
+    characters: [],
+    versionHistory: [],
+    settings: { gridBg: false, keySound: false }
+  };
+}
+
+function normalizeSettings(){
+  if(!state.settings) state.settings = { gridBg: false, keySound: false };
+  if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
+  if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
+}
+
+function currentChapter(){
+  return state.chapters.find(c => c.id === state.currentChapterId);
+}
+
+/* ---------------- undo / redo ---------------- */
+let undoStack = [];
+let redoStack = [];
+let pendingSnapshot = null;
+let pendingTimer = null;
+
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function pushHistory(snapshot){
+  undoStack.push(snapshot);
+  if(undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+  updateHistButtons();
+}
+
+function flushPending(){
+  if(pendingSnapshot){
+    clearTimeout(pendingTimer);
+    pushHistory(pendingSnapshot);
+    pendingSnapshot = null;
+  }
+}
+
+function captureForEdit(){
+  if(!pendingSnapshot){ pendingSnapshot = deepClone(state); }
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => { pushHistory(pendingSnapshot); pendingSnapshot = null; }, 1200);
+  schedulePersist();
+}
+
+function withHistory(mutateFn){
+  flushPending();
+  pushHistory(deepClone(state));
+  mutateFn();
+  schedulePersist();
+}
+
+function undo(){
+  flushPending();
+  if(undoStack.length === 0) return;
+  redoStack.push(deepClone(state));
+  state = undoStack.pop();
+  if(!state.chapters.find(c => c.id === state.currentChapterId)){
+    state.currentChapterId = state.chapters[0] ? state.chapters[0].id : null;
+  }
+  updateHistButtons();
+  renderAll();
+  schedulePersist();
+}
+
+function redo(){
+  if(redoStack.length === 0) return;
+  undoStack.push(deepClone(state));
+  state = redoStack.pop();
+  updateHistButtons();
+  renderAll();
+  schedulePersist();
+}
+
+function updateHistButtons(){
+  document.getElementById('undoBtn').disabled = undoStack.length === 0;
+  document.getElementById('redoBtn').disabled = redoStack.length === 0;
+}
+
+/* ---------------- word counting ---------------- */
+function countCJK(text){
+  return (text.match(/[\u4e00-\u9fff]/g) || []).length;
+}
+function countCJKWithPunct(text){
+  return text.replace(/\s/g, '').length;
+}
+function countEnWords(text){
+  return (text.trim().match(/[A-Za-z0-9'-]+/g) || []).length;
+}
+function isCJKDominant(text){
+  const cjk = countCJK(text);
+  const total = text.replace(/\s/g,'').length || 1;
+  return (cjk / total) > 0.3;
+}
+function wordCount(text, mode){
+  mode = mode || state.wordMode;
+  if(mode === 'auto') mode = isCJKDominant(text) ? 'cjk' : 'enWords';
+  if(mode === 'cjk') return countCJKWithPunct(text);
+  if(mode === 'cjkOnly') return countCJK(text);
+  if(mode === 'enWords') return countEnWords(text);
+  return countCJKWithPunct(text);
+}
+function modeLabel(){
+  const m = state.wordMode === 'auto'
+    ? (isCJKDominant(currentChapter().sections.map(s=>s.text).join('')) ? 'cjk' : 'enWords')
+    : state.wordMode;
+  return { cjk:'字', cjkOnly:'漢字', enWords:'詞' }[m] || '字';
+}
+
+/* ---------------- rendering ---------------- */
+function renderSidebar(){
+  const list = document.getElementById('chapterList');
+  list.innerHTML = '';
+  state.chapters.forEach(ch => {
+    const total = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
+    const li = document.createElement('li');
+    li.className = 'chapter-item' + (ch.id === state.currentChapterId ? ' active' : '');
+    li.innerHTML = `<span>${escapeHtml(ch.title || '未命名章節')}</span><span class="cnt">${total}</span>`;
+    li.onclick = () => { state.currentChapterId = ch.id; renderAll(); };
+    list.appendChild(li);
+  });
+}
+
+function autoResize(ta){
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight) + 'px';
+}
+
+function renderRows(){
+  const container = document.getElementById('rows');
+  container.innerHTML = '';
+  container.classList.toggle('grid-mode', !!(state.settings && state.settings.gridBg));
+  const ch = currentChapter();
+  const label = modeLabel();
+
+  ch.sections.forEach((sec, idx) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.draggable = true;
+    row.dataset.id = sec.id;
+
+    row.innerHTML = `
+      <div class="row-gutter">
+        <div class="seal">${idx + 1}</div>
+        <div class="drag-handle" title="拖曳排序">⠿</div>
+        <div class="gutter-btns">
+          ${idx > 0 ? '<button class="gbtn" data-move="-1" title="上移">▲</button>' : ''}
+          ${idx < ch.sections.length - 1 ? '<button class="gbtn" data-move="1" title="下移">▼</button>' : ''}
+        </div>
+      </div>
+      <div class="cell left-cell">
+        <textarea placeholder="在此輸入正文……" data-role="text">${escapeHtml(sec.text)}</textarea>
+        <div class="cell-footer" style="justify-content:flex-end;">
+          <div class="row-actions">
+            <button data-action="split">分節</button>
+            ${idx > 0 ? '<button data-action="merge">併入上節</button>' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="row-divider"></div>
+      <div class="cell right-cell">
+        <textarea placeholder="備註 / 大綱……" data-role="note">${escapeHtml(sec.note)}</textarea>
+        <div class="cell-footer">
+          <span class="wc-right">對應正文 0${label}</span>
+        </div>
+      </div>
+      <div class="thread"></div>
+    `;
+
+    const textArea = row.querySelector('[data-role="text"]');
+    const noteArea = row.querySelector('[data-role="note"]');
+    const wcRight = row.querySelector('.wc-right');
+
+    const updateCounts = () => {
+      wcRight.textContent = '對應正文 ' + wordCount(textArea.value) + label;
+      updateStrip();
+      flashAutosave();
+      renderSidebar();
+    };
+
+    textArea.addEventListener('input', () => { captureForEdit(); sec.text = textArea.value; autoResize(textArea); updateCounts(); });
+    noteArea.addEventListener('input', () => { captureForEdit(); sec.note = noteArea.value; autoResize(noteArea); updateCounts(); });
+
+    row.querySelector('[data-action="split"]').onclick = () => splitSection(sec.id, textArea.selectionStart);
+    const mergeBtn = row.querySelector('[data-action="merge"]');
+    if(mergeBtn) mergeBtn.onclick = () => mergeUp(sec.id);
+    row.querySelectorAll('[data-move]').forEach(btn => {
+      btn.onclick = () => moveSection(sec.id, parseInt(btn.dataset.move, 10));
+    });
+
+    // drag handlers
+    row.addEventListener('dragstart', e => {
+      row.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', sec.id);
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      row.classList.toggle('drag-over-top', e.clientY < mid);
+      row.classList.toggle('drag-over-bottom', e.clientY >= mid);
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over-top', 'drag-over-bottom');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if(draggedId === sec.id) return;
+      const rect = row.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      reorderSection(draggedId, sec.id, before);
+    });
+
+    container.appendChild(row);
+    requestAnimationFrame(() => { autoResize(textArea); autoResize(noteArea); updateCounts(); });
+  });
+
+  const hint = document.createElement('div');
+  hint.className = 'add-row-hint';
+  hint.textContent = '+ 新增分節';
+  hint.onclick = () => {
+    withHistory(() => ch.sections.push({ id: newId(), text: '', note: '' }));
+    renderRows();
+  };
+  container.appendChild(hint);
+}
+
+function updateStrip(){
+  const ch = currentChapter();
+  document.getElementById('chapterWordCount').textContent =
+    ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
+  document.getElementById('chapterSectionCount').textContent = ch.sections.length;
+  document.getElementById('bookWordCount').textContent =
+    state.chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text), 0), 0);
+}
+
+function flashAutosave(){
+  schedulePersist();
+}
+
+function splitSection(id, cursorPos){
+  withHistory(() => {
+    const ch = currentChapter();
+    const idx = ch.sections.findIndex(s => s.id === id);
+    const sec = ch.sections[idx];
+    const before = sec.text.slice(0, cursorPos);
+    const after = sec.text.slice(cursorPos);
+    sec.text = before;
+    ch.sections.splice(idx + 1, 0, { id: newId(), text: after, note: '' });
+  });
+  renderRows(); updateStrip(); renderSidebar();
+}
+
+function mergeUp(id){
+  withHistory(() => {
+    const ch = currentChapter();
+    const idx = ch.sections.findIndex(s => s.id === id);
+    if(idx <= 0) return;
+    const prev = ch.sections[idx - 1];
+    const cur = ch.sections[idx];
+    prev.text = prev.text + (prev.text && cur.text ? '\n' : '') + cur.text;
+    prev.note = prev.note + (prev.note && cur.note ? '\n' : '') + cur.note;
+    ch.sections.splice(idx, 1);
+  });
+  renderRows(); updateStrip(); renderSidebar();
+}
+
+function reorderSection(draggedId, targetId, before){
+  withHistory(() => {
+    const ch = currentChapter();
+    const fromIdx = ch.sections.findIndex(s => s.id === draggedId);
+    const item = ch.sections.splice(fromIdx, 1)[0];
+    let toIdx = ch.sections.findIndex(s => s.id === targetId);
+    if(!before) toIdx += 1;
+    ch.sections.splice(toIdx, 0, item);
+  });
+  renderRows(); updateStrip(); renderSidebar();
+}
+
+function moveSection(id, dir){
+  withHistory(() => {
+    const ch = currentChapter();
+    const idx = ch.sections.findIndex(s => s.id === id);
+    const target = idx + dir;
+    if(target < 0 || target >= ch.sections.length) return;
+    const tmp = ch.sections[idx];
+    ch.sections[idx] = ch.sections[target];
+    ch.sections[target] = tmp;
+  });
+  renderRows(); updateStrip(); renderSidebar();
+}
+
+function escapeHtml(str){
+  return (str || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------------- overview ---------------- */
+function renderOverview(){
+  const tbl = document.getElementById('ovTable');
+  let total = 0;
+  let rows = state.chapters.map(ch => {
+    const wc = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
+    total += wc;
+    return `<tr><td>${escapeHtml(ch.title)}</td><td class="num">${ch.sections.length}</td><td class="num">${wc}</td></tr>`;
+  }).join('');
+  tbl.innerHTML = `
+    <tr><th>章節</th><th>節數</th><th>字數</th></tr>
+    ${rows}
+    <tr class="total"><td>總計</td><td class="num">${state.chapters.reduce((s,c)=>s+c.sections.length,0)}</td><td class="num">${total}</td></tr>
+  `;
+
+  const bars = document.getElementById('bars');
+  const demo = [320, 850, 0, 1200, 640, 980, 410];
+  const days = ['一','二','三','四','五','六','日'];
+  const max = Math.max(...demo, 1);
+  bars.innerHTML = demo.map((v,i) => `
+    <div class="bar" style="height:${(v/max*100)}%">
+      <span>${days[i]}</span>
+    </div>
+  `).join('');
+}
+
+/* ---------------- top-level render ---------------- */
+function renderAll(){
+  const ch = currentChapter();
+  document.getElementById('chapterTitle').value = ch.title;
+  renderSidebar();
+  renderRows();
+  updateStrip();
+  updateHistButtons();
+}
+
+document.getElementById('chapterTitle').addEventListener('input', e => {
+  captureForEdit();
+  currentChapter().title = e.target.value;
+  renderSidebar();
+});
+
+document.getElementById('modeSelect').addEventListener('change', e => {
+  state.wordMode = e.target.value;
+  renderRows(); updateStrip();
+  schedulePersist();
+});
+
+document.getElementById('addChapterBtn').onclick = () => {
+  const ch = { id: newId(), title: '新章節', sections: [{ id: newId(), text: '', note: '' }] };
+  withHistory(() => { state.chapters.push(ch); state.currentChapterId = ch.id; });
+  renderAll();
+};
+
+document.getElementById('undoBtn').onclick = undo;
+document.getElementById('redoBtn').onclick = redo;
+window.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if(!mod) return;
+  const k = e.key.toLowerCase();
+  if(k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+  else if(k === 'y' || (k === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
+});
+
+document.getElementById('endSessionBtn').onclick = () => {
+  flushPending();
+  saveSnapshot('本次寫作結束');
+  schedulePersist();
+  const tag = document.getElementById('autosaveTag');
+  tag.innerHTML = '<span class="dot" style="background:var(--vermillion)"></span>本次寫作已存為快照';
+  setTimeout(() => flashAutosave(), 1800);
+};
+
+
+function renderForeshadow(){
+  const list = document.getElementById('fsList');
+  list.innerHTML = '';
+  state.foreshadows.forEach(fs => {
+    const card = document.createElement('div');
+    card.className = 'fs-card';
+    const chapter = state.chapters.find(c => c.id === fs.chapterId) || state.chapters[0];
+    if(fs.chapterId !== chapter.id) fs.chapterId = chapter.id;
+    if(fs.sectionId && !chapter.sections.find(s => s.id === fs.sectionId)) fs.sectionId = null;
+
+    const chapterOptions = state.chapters.map(c =>
+      `<option value="${c.id}" ${c.id === fs.chapterId ? 'selected' : ''}>${escapeHtml(c.title)}</option>`
+    ).join('');
+    const sectionOptions = ['<option value="">（整章）</option>'].concat(
+      chapter.sections.map((s, i) =>
+        `<option value="${s.id}" ${s.id === fs.sectionId ? 'selected' : ''}>第${i + 1}節</option>`
+      )
+    ).join('');
+    const statusOptions = ['埋下', '已回收', '已放棄'].map(s =>
+      `<option value="${s}" ${s === fs.status ? 'selected' : ''}>${s}</option>`
+    ).join('');
+    card.innerHTML = `
+      <div>
+        <input class="fs-title" value="${escapeHtml(fs.title)}" placeholder="伏筆名稱" />
+        <textarea class="fs-desc" rows="2" placeholder="說明（選填）">${escapeHtml(fs.desc || '')}</textarea>
+      </div>
+      <select class="fs-chapter">${chapterOptions}</select>
+      <select class="fs-section">${sectionOptions}</select>
+      <select class="fs-status" data-status="${fs.status}">${statusOptions}</select>
+      <button class="fs-del" title="刪除">✕</button>
+    `;
+    card.querySelector('.fs-title').addEventListener('input', e => { captureForEdit(); fs.title = e.target.value; });
+    card.querySelector('.fs-desc').addEventListener('input', e => { captureForEdit(); fs.desc = e.target.value; });
+    card.querySelector('.fs-chapter').addEventListener('change', e => {
+      withHistory(() => { fs.chapterId = e.target.value; fs.sectionId = null; });
+      renderForeshadow();
+    });
+    card.querySelector('.fs-section').addEventListener('change', e => {
+      withHistory(() => { fs.sectionId = e.target.value || null; });
+    });
+    const statusSel = card.querySelector('.fs-status');
+    statusSel.addEventListener('change', e => {
+      withHistory(() => { fs.status = e.target.value; });
+      statusSel.dataset.status = e.target.value;
+    });
+    card.querySelector('.fs-del').onclick = () => {
+      withHistory(() => {
+        state.foreshadows = state.foreshadows.filter(f => f.id !== fs.id);
+      });
+      renderForeshadow();
+    };
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('fsAdd').onclick = () => {
+  withHistory(() => {
+    state.foreshadows.push({ id: newId(), title: '新伏筆', desc: '', chapterId: state.currentChapterId, sectionId: null, status: '埋下' });
+  });
+  renderForeshadow();
+};
+
+/* ---------------- export ---------------- */
+let exportScope = 'all';
+function renderExportList(){
+  const list = document.getElementById('exportList');
+  if(exportScope === 'all'){
+    list.innerHTML = '<div style="color:var(--ink-faint); font-size:12px;">將匯出全部章節，依目前排序</div>';
+    return;
+  }
+  list.innerHTML = state.chapters.map(c => `
+    <label><input type="checkbox" class="exp-chk" value="${c.id}" checked /> ${escapeHtml(c.title)}</label>
+  `).join('');
+}
+
+document.getElementById('exportBtn').onclick = () => {
+  exportScope = 'all';
+  document.getElementById('scopeAll').classList.add('active');
+  document.getElementById('scopeSelect').classList.remove('active');
+  renderExportList();
+  document.getElementById('exportBackdrop').style.display = 'flex';
+};
+document.getElementById('exportCancel').onclick = () => { document.getElementById('exportBackdrop').style.display = 'none'; };
+document.getElementById('exportBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'exportBackdrop') document.getElementById('exportBackdrop').style.display = 'none';
+});
+document.getElementById('scopeAll').onclick = () => {
+  exportScope = 'all';
+  document.getElementById('scopeAll').classList.add('active');
+  document.getElementById('scopeSelect').classList.remove('active');
+  renderExportList();
+};
+document.getElementById('scopeSelect').onclick = () => {
+  exportScope = 'select';
+  document.getElementById('scopeSelect').classList.add('active');
+  document.getElementById('scopeAll').classList.remove('active');
+  renderExportList();
+};
+document.getElementById('exportConfirm').onclick = () => {
+  let chapters;
+  if(exportScope === 'all'){
+    chapters = state.chapters;
+  } else {
+    const checked = Array.from(document.querySelectorAll('.exp-chk:checked')).map(el => el.value);
+    chapters = state.chapters.filter(c => checked.includes(c.id));
+  }
+  if(chapters.length === 0){ alert('請至少選擇一章'); return; }
+  const text = chapters.map(c =>
+    c.title + '\n\n' + c.sections.map(s => s.text).filter(Boolean).join('\n\n')
+  ).join('\n\n\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (exportScope === 'all' ? '全文' : '選定章節') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  document.getElementById('exportBackdrop').style.display = 'none';
+};
+
+/* ---------------- characters ---------------- */
+function renderCharacters(){
+  const list = document.getElementById('charList');
+  list.innerHTML = '';
+  state.characters.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `
+      <div class="char-head">
+        <input class="char-name" value="${escapeHtml(ch.name)}" placeholder="角色名稱" />
+        <input class="char-tag" value="${escapeHtml(ch.tag || '')}" placeholder="身份／關係" />
+        <button class="char-del" title="刪除">✕</button>
+      </div>
+      <textarea class="char-desc" rows="2" placeholder="外貌、性格、背景設定……">${escapeHtml(ch.desc || '')}</textarea>
+    `;
+    card.querySelector('.char-name').addEventListener('input', e => { captureForEdit(); ch.name = e.target.value; });
+    card.querySelector('.char-tag').addEventListener('input', e => { captureForEdit(); ch.tag = e.target.value; });
+    card.querySelector('.char-desc').addEventListener('input', e => { captureForEdit(); ch.desc = e.target.value; });
+    card.querySelector('.char-del').onclick = () => {
+      withHistory(() => { state.characters = state.characters.filter(c => c.id !== ch.id); });
+      renderCharacters();
+    };
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('charAdd').onclick = () => {
+  withHistory(() => {
+    state.characters.push({ id: newId(), name: '新角色', tag: '', desc: '' });
+  });
+  renderCharacters();
+};
+
+/* ---------------- version history ---------------- */
+function saveSnapshot(label){
+  state.versionHistory.unshift({
+    id: newId(), label, ts: new Date().toISOString(), chapters: deepClone(state.chapters)
+  });
+  if(state.versionHistory.length > 100) state.versionHistory.pop();
+}
+
+function formatTs(iso){
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function totalWords(chapters){
+  return chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text), 0), 0);
+}
+
+/* ---------------- char-level diff ---------------- */
+function diffChars(a, b){
+  const n = a.length, m = b.length;
+  const dp = new Array(n + 1);
+  for(let i = 0; i <= n; i++) dp[i] = new Int32Array(m + 1);
+  for(let i = n - 1; i >= 0; i--){
+    for(let j = m - 1; j >= 0; j--){
+      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  const result = [];
+  let i = 0, j = 0, buffer = '', bufType = null;
+  const flush = () => { if(bufType !== null && buffer) result.push({ type: bufType, text: buffer }); buffer = ''; };
+  const push = (type, ch) => {
+    if(bufType !== type){ flush(); bufType = type; }
+    buffer += ch;
+  };
+  while(i < n && j < m){
+    if(a[i] === b[j]){ push('equal', a[i]); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ push('del', a[i]); i++; }
+    else { push('add', b[j]); j++; }
+  }
+  while(i < n){ push('del', a[i]); i++; }
+  while(j < m){ push('add', b[j]); j++; }
+  flush();
+  return result;
+}
+
+function diffTextSafe(a, b){
+  if(a === b) return [{ type: 'equal', text: a }];
+  if(a.length * b.length > 3000000){
+    return [{ type: 'del', text: a }, { type: 'add', text: b }];
+  }
+  return diffChars(a, b);
+}
+
+function segsToHtml(segs){
+  return segs.map(seg => {
+    const t = escapeHtml(seg.text);
+    if(seg.type === 'add') return `<ins class="d-add">${t}</ins>`;
+    if(seg.type === 'del') return `<del class="d-del">${t}</del>`;
+    return t;
+  }).join('');
+}
+
+function computeChapterDiff(vc, cur){
+  const oldSections = vc.sections;
+  const newSections = cur ? cur.sections : [];
+  const oldById = new Map(oldSections.map(s => [s.id, s]));
+  const newById = new Map(newSections.map(s => [s.id, s]));
+  const order = [];
+  oldSections.forEach(s => order.push(s.id));
+  newSections.forEach(s => { if(!oldById.has(s.id)) order.push(s.id); });
+
+  let added = 0, removed = 0;
+  const htmlParts = [];
+  order.forEach((id, idx) => {
+    const os = oldById.get(id);
+    const ns = newById.get(id);
+    if(os && ns){
+      if(os.text === ns.text) return;
+      const d = diffTextSafe(os.text, ns.text);
+      d.forEach(seg => {
+        if(seg.type === 'add') added += seg.text.length;
+        if(seg.type === 'del') removed += seg.text.length;
+      });
+      htmlParts.push(`<div class="diff-section"><div class="diff-section-label">第${idx + 1}節 · 內容變動</div><div class="diff-text">${segsToHtml(d)}</div></div>`);
+    } else if(os && !ns){
+      removed += os.text.length;
+      htmlParts.push(`<div class="diff-section"><div class="diff-section-label">此節已刪除</div><div class="diff-text"><del class="d-del">${escapeHtml(os.text)}</del></div></div>`);
+    } else if(!os && ns){
+      added += ns.text.length;
+      htmlParts.push(`<div class="diff-section"><div class="diff-section-label">新增節</div><div class="diff-text"><ins class="d-add">${escapeHtml(ns.text)}</ins></div></div>`);
+    }
+  });
+  return {
+    added, removed,
+    html: htmlParts.join('') || '<div style="color:var(--ink-faint); font-size:12px; padding:8px 0;">此章節內容無變動</div>'
+  };
+}
+
+function renderHistory(){
+  const list = document.getElementById('histList');
+  if(state.versionHistory.length === 0){
+    list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有保存的版本，結束寫作或手動備份後會出現在這裡</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.versionHistory.forEach(v => {
+    const item = document.createElement('div');
+    item.className = 'hv-item';
+    item.innerHTML = `
+      <div class="hv-row">
+        <span class="hv-label">${escapeHtml(v.label)}</span>
+        <span class="hv-time">${formatTs(v.ts)}</span>
+        <span class="hv-wc">共 ${totalWords(v.chapters)} 字</span>
+        <div class="hv-actions">
+          <button data-act="compare">比較</button>
+          <button data-act="restore">還原至此版</button>
+        </div>
+      </div>
+      <div class="hv-diff"></div>
+    `;
+    item.querySelector('[data-act="restore"]').onclick = () => {
+      if(!confirm(`確定要還原到「${v.label}（${formatTs(v.ts)}）」嗎？目前內容會先存入撤銷紀錄，仍可 Ctrl+Z 復原。`)) return;
+      flushPending();
+      pushHistory(deepClone(state));
+      state.chapters = deepClone(v.chapters);
+      if(!state.chapters.find(c => c.id === state.currentChapterId)){
+        state.currentChapterId = state.chapters[0] ? state.chapters[0].id : null;
+      }
+      renderAll();
+      showView('edit');
+      schedulePersist();
+    };
+    const diffBox = item.querySelector('.hv-diff');
+    item.querySelector('[data-act="compare"]').onclick = () => {
+      const open = diffBox.classList.toggle('open');
+      if(open && !diffBox.dataset.built){
+        diffBox.dataset.built = '1';
+        const chapterIds = [];
+        v.chapters.forEach(vc => chapterIds.push(vc.id));
+        state.chapters.forEach(c => { if(!chapterIds.includes(c.id)) chapterIds.push(c.id); });
+
+        diffBox.innerHTML = chapterIds.map(id => {
+          const vc = v.chapters.find(c => c.id === id);
+          const cur = state.chapters.find(c => c.id === id);
+          const title = (vc || cur).title;
+          if(!vc){
+            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-pos">新增章節</span></div></div>`;
+          }
+          if(!cur){
+            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-neg">此版本後已刪除</span></div></div>`;
+          }
+          const { added, removed, html } = computeChapterDiff(vc, cur);
+          if(added === 0 && removed === 0){
+            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-zero">無變動</span></div></div>`;
+          }
+          const rowId = 'dc-' + Math.random().toString(36).slice(2, 9);
+          return `
+            <div class="diff-chapter-row">
+              <div class="dc-head">
+                <span class="dc-title">${escapeHtml(title)}</span>
+                <span class="dc-delta"><span class="diff-pos">+${added}</span> <span class="diff-neg">-${removed}</span></span>
+                <button data-toggle="${rowId}">查看修改處</button>
+              </div>
+              <div class="dc-body" id="${rowId}">${html}</div>
+            </div>
+          `;
+        }).join('');
+
+        diffBox.querySelectorAll('[data-toggle]').forEach(btn => {
+          btn.onclick = () => {
+            const body = document.getElementById(btn.dataset.toggle);
+            const isOpen = body.classList.toggle('open');
+            btn.textContent = isOpen ? '收合' : '查看修改處';
+          };
+        });
+      }
+    };
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('histAdd').onclick = () => {
+  saveSnapshot('手動備份');
+  renderHistory();
+  schedulePersist();
+};
+
+/* ---------------- view switching ---------------- */
+function showView(view){
+  document.getElementById('rows').style.display = view === 'edit' ? 'block' : 'none';
+  document.getElementById('stats-strip').style.display = view === 'edit' ? 'flex' : 'none';
+  document.getElementById('overview').style.display = view === 'overview' ? 'block' : 'none';
+  document.getElementById('foreshadow').style.display = view === 'foreshadow' ? 'block' : 'none';
+  document.getElementById('characters').style.display = view === 'characters' ? 'block' : 'none';
+  document.getElementById('history').style.display = view === 'history' ? 'block' : 'none';
+  document.getElementById('chapterTitle').style.display = view === 'edit' ? 'block' : 'none';
+  document.querySelector('.col-headers').style.display = view === 'edit' ? 'grid' : 'none';
+  document.getElementById('modeSelect').style.display = view === 'edit' ? 'inline-block' : 'none';
+  if(view === 'overview') renderOverview();
+  if(view === 'foreshadow') renderForeshadow();
+  if(view === 'characters') renderCharacters();
+  if(view === 'history') renderHistory();
+}
+
+document.getElementById('overviewBtn').onclick = () => showView('overview');
+document.getElementById('closeOverview').onclick = () => showView('edit');
+document.getElementById('foreshadowBtn').onclick = () => showView('foreshadow');
+document.getElementById('closeForeshadow').onclick = () => showView('edit');
+document.getElementById('characterBtn').onclick = () => showView('characters');
+document.getElementById('closeCharacters').onclick = () => showView('edit');
+document.getElementById('historyBtn').onclick = () => showView('history');
+document.getElementById('closeHistory').onclick = () => showView('edit');
+
+/* ================= crypto + storage engine ================= */
+const CryptoVault = (() => {
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  function bufToB64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+  function b64ToBuf(b64){ const bin = atob(b64); const arr = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return arr.buffer; }
+  async function deriveKey(password, saltB64){
+    const salt = b64ToBuf(saltB64);
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt, iterations:150000, hash:'SHA-256' },
+      baseKey, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']
+    );
+  }
+  function randomSaltB64(){ return bufToB64(crypto.getRandomValues(new Uint8Array(16)).buffer); }
+  async function encryptJSON(key, obj){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const data = enc.encode(JSON.stringify(obj));
+    const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, data);
+    return { iv: bufToB64(iv), ciphertext: bufToB64(ct) };
+  }
+  async function decryptJSON(key, ivB64, ciphertextB64){
+    const iv = new Uint8Array(b64ToBuf(ivB64));
+    const ct = b64ToBuf(ciphertextB64);
+    const buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, ct);
+    return JSON.parse(dec.decode(buf));
+  }
+  return { deriveKey, randomSaltB64, encryptJSON, decryptJSON };
+})();
+
+const VaultDB = (() => {
+  const DB_NAME = 'gaozhi-db', STORE = 'kv';
+  let dbPromise = null;
+  function open(){
+    if(dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbPromise;
+  }
+  async function get(key){
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function set(key, value){
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  return { get, set };
+})();
+
+let vaultKey = null;
+let vaultSalt = null;
+let persistTimer = null;
+
+function setAutosaveStatus(status){
+  const tag = document.getElementById('autosaveTag');
+  if(!tag) return;
+  if(status === 'saving'){
+    tag.innerHTML = '<span class="dot" style="background:#C97456"></span>保存中…';
+  } else if(status === 'saved'){
+    const t = new Date();
+    const hh = String(t.getHours()).padStart(2,'0');
+    const mm = String(t.getMinutes()).padStart(2,'0');
+    tag.innerHTML = `<span class="dot"></span>已自動保存 · ${hh}:${mm}`;
+  } else if(status === 'error'){
+    tag.innerHTML = '<span class="dot" style="background:var(--vermillion)"></span>保存失敗，請重試';
+  }
+}
+
+function schedulePersist(){
+  if(!vaultKey || !state) return;
+  setAutosaveStatus('saving');
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(async () => {
+    try{
+      const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
+      await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
+      setAutosaveStatus('saved');
+    } catch(err){
+      console.error('persist failed', err);
+      setAutosaveStatus('error');
+    }
+  }, 600);
+}
+
+/* ================= gate / boot ================= */
+function showGate(mode){
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('appRoot').classList.remove('active');
+  ['loading','setup','unlock'].forEach(m => {
+    document.getElementById('gate-' + m).style.display = (m === mode) ? 'block' : 'none';
+  });
+}
+
+function enterApp(loadedState){
+  state = loadedState;
+  idSeed = 1;
+  normalizeSettings();
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('appRoot').classList.add('active');
+  undoStack = []; redoStack = []; pendingSnapshot = null;
+  renderAll();
+}
+
+async function boot(){
+  showGate('loading');
+  let existing = null;
+  try{ existing = await VaultDB.get('vault'); } catch(e){ existing = null; }
+  if(existing && existing.ciphertext){
+    showGate('unlock');
+  } else {
+    showGate('setup');
+  }
+}
+
+document.getElementById('setupForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = document.getElementById('setupPw').value;
+  const pw2 = document.getElementById('setupPw2').value;
+  const errEl = document.getElementById('setupError');
+  errEl.textContent = '';
+  if(pw.length < 6){ errEl.textContent = '密碼至少需要 6 個字元'; return; }
+  if(pw !== pw2){ errEl.textContent = '兩次輸入的密碼不一致'; return; }
+  const salt = CryptoVault.randomSaltB64();
+  const key = await CryptoVault.deriveKey(pw, salt);
+  const initial = freshState();
+  const { iv, ciphertext } = await CryptoVault.encryptJSON(key, initial);
+  await VaultDB.set('vault', { salt, iv, ciphertext, updatedAt: Date.now() });
+  vaultKey = key; vaultSalt = salt;
+  enterApp(initial);
+});
+
+document.getElementById('showImportPanel').onclick = () => {
+  document.getElementById('importPanel').classList.toggle('open');
+};
+
+document.getElementById('setupImportForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const file = document.getElementById('setupImportFile').files[0];
+  const pw = document.getElementById('setupImportPw').value;
+  const errEl = document.getElementById('setupImportError');
+  errEl.textContent = '';
+  if(!file){ errEl.textContent = '請選擇備份檔案'; return; }
+  try{
+    const text = await file.text();
+    const rec = JSON.parse(text);
+    const key = await CryptoVault.deriveKey(pw, rec.salt);
+    const loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
+    await VaultDB.set('vault', rec);
+    vaultKey = key; vaultSalt = rec.salt;
+    enterApp(loaded);
+  } catch(err){
+    errEl.textContent = '匯入失敗：密碼錯誤，或檔案已損毀';
+  }
+});
+
+document.getElementById('unlockForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = document.getElementById('unlockPw').value;
+  const errEl = document.getElementById('unlockError');
+  errEl.textContent = '';
+  const rec = await VaultDB.get('vault');
+  try{
+    const key = await CryptoVault.deriveKey(pw, rec.salt);
+    const loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
+    vaultKey = key; vaultSalt = rec.salt;
+    document.getElementById('unlockPw').value = '';
+    enterApp(loaded);
+  } catch(err){
+    errEl.textContent = '密碼錯誤，請再試一次';
+  }
+});
+
+document.getElementById('lockBtn').onclick = () => {
+  flushPending();
+  vaultKey = null; vaultSalt = null; state = null;
+  showGate('unlock');
+};
+
+/* ================= backup modal ================= */
+document.getElementById('backupBtn').onclick = () => {
+  document.getElementById('exportBackupMsg').textContent = '';
+  document.getElementById('restoreBackupMsg').textContent = '';
+  document.getElementById('changePwMsg').textContent = '';
+  document.getElementById('backupBackdrop').style.display = 'flex';
+};
+document.getElementById('backupClose').onclick = () => { document.getElementById('backupBackdrop').style.display = 'none'; };
+document.getElementById('backupBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'backupBackdrop') document.getElementById('backupBackdrop').style.display = 'none';
+});
+
+document.getElementById('doExportBackup').onclick = async () => {
+  const msg = document.getElementById('exportBackupMsg');
+  try{
+    const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
+    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const t = new Date();
+    a.download = `稿紙備份_${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '已下載，記得手動放進你的雲端同步資料夾';
+  } catch(err){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '匯出失敗，請重試';
+  }
+};
+
+document.getElementById('doRestoreBackup').onclick = async () => {
+  const msg = document.getElementById('restoreBackupMsg');
+  const file = document.getElementById('restoreFile').files[0];
+  const pw = document.getElementById('restorePw').value;
+  msg.textContent = '';
+  if(!file || !pw){ msg.style.color='var(--vermillion)'; msg.textContent = '請選擇檔案並輸入密碼'; return; }
+  if(!confirm('還原將覆蓋目前裝置上的所有內容，且無法復原（不計入撤銷紀錄），確定要繼續嗎？')) return;
+  try{
+    const text = await file.text();
+    const rec = JSON.parse(text);
+    const key = await CryptoVault.deriveKey(pw, rec.salt);
+    const loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
+    state = loaded;
+    normalizeSettings();
+    undoStack = []; redoStack = []; pendingSnapshot = null;
+    renderAll();
+    schedulePersist();
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '已還原';
+    document.getElementById('restoreFile').value = '';
+    document.getElementById('restorePw').value = '';
+  } catch(err){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '還原失敗：密碼錯誤，或檔案已損毀';
+  }
+};
+
+document.getElementById('doChangePw').onclick = async () => {
+  const msg = document.getElementById('changePwMsg');
+  const pw1 = document.getElementById('newPw1').value;
+  const pw2 = document.getElementById('newPw2').value;
+  msg.textContent = '';
+  if(pw1.length < 6){ msg.style.color='var(--vermillion)'; msg.textContent = '密碼至少需要 6 個字元'; return; }
+  if(pw1 !== pw2){ msg.style.color='var(--vermillion)'; msg.textContent = '兩次輸入的密碼不一致'; return; }
+  try{
+    const newSalt = CryptoVault.randomSaltB64();
+    const newKey = await CryptoVault.deriveKey(pw1, newSalt);
+    const { iv, ciphertext } = await CryptoVault.encryptJSON(newKey, state);
+    await VaultDB.set('vault', { salt: newSalt, iv, ciphertext, updatedAt: Date.now() });
+    vaultKey = newKey; vaultSalt = newSalt;
+    document.getElementById('newPw1').value = '';
+    document.getElementById('newPw2').value = '';
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '密碼已更改';
+  } catch(err){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '更改失敗，請重試';
+  }
+};
+
+/* ================= settings: grid background + key sound ================= */
+document.getElementById('settingsBtn').onclick = () => {
+  document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
+  document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
+  document.getElementById('settingsBackdrop').style.display = 'flex';
+};
+document.getElementById('settingsCloseBtn').onclick = () => { document.getElementById('settingsBackdrop').style.display = 'none'; };
+document.getElementById('settingsBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'settingsBackdrop') document.getElementById('settingsBackdrop').style.display = 'none';
+});
+document.getElementById('toggleGridBg').addEventListener('change', e => {
+  normalizeSettings();
+  state.settings.gridBg = e.target.checked;
+  document.getElementById('rows').classList.toggle('grid-mode', e.target.checked);
+  schedulePersist();
+});
+document.getElementById('toggleKeySound').addEventListener('change', e => {
+  normalizeSettings();
+  state.settings.keySound = e.target.checked;
+  schedulePersist();
+  if(e.target.checked) playKeySound();
+});
+
+let audioCtx = null;
+function playKeySound(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1100 + Math.random() * 260, t);
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.06);
+  } catch(e){ /* audio not available, fail silently */ }
+}
+
+document.addEventListener('keydown', e => {
+  if(!state || !state.settings || !state.settings.keySound) return;
+  const tag = e.target.tagName;
+  if(tag !== 'TEXTAREA' && tag !== 'INPUT') return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  if(['Shift','Control','Alt','Meta','CapsLock','Tab','Escape'].includes(e.key)) return;
+  playKeySound();
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
