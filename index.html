@@ -707,6 +707,45 @@
     width:100%; margin-top:16px; padding:8px; background:transparent; border:1px solid var(--line);
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
+
+  /* ---------- Library (book list) ---------- */
+  #library{
+    display:none; flex:1; overflow-y:auto; padding: 40px 56px; max-width:960px; margin:0 auto; width:100%;
+  }
+  .library-header h1{
+    font-family:"Noto Serif SC", serif; font-size:26px; letter-spacing:3px; margin:0 0 2px;
+  }
+  .library-header .subtitle{ color:var(--ink-faint); font-size:12.5px; margin-bottom:24px; }
+  .lib-add{
+    border:1px dashed var(--line); background:transparent; color:var(--ink-soft);
+    padding:12px 16px; border-radius:var(--radius); font-size:13px; cursor:pointer;
+    font-family:inherit; margin-bottom:24px; width:100%;
+  }
+  .lib-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .lib-empty{ text-align:center; color:var(--ink-faint); font-size:13px; padding:40px 0; }
+  .book-card{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:16px 18px; margin-bottom:10px; display:flex; align-items:flex-start; gap:14px;
+  }
+  .book-card-main{ flex:1; min-width:0; }
+  .book-title{
+    font-family:"Noto Serif SC", serif; font-size:16px; font-weight:600; border:none; outline:none;
+    background:transparent; color:var(--ink); width:100%; margin-bottom:6px; cursor:pointer;
+  }
+  .book-meta-row{ display:flex; gap:8px; margin-bottom:8px; }
+  .book-meta-row input{
+    font-family:inherit; font-size:11.5px; color:var(--ink-soft); background:var(--paper);
+    border:1px solid var(--line); border-radius:var(--radius); padding:5px 9px; flex:1;
+  }
+  .book-stats{ font-size:11px; color:var(--ink-faint); }
+  .book-actions{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .book-actions button{
+    font-family:inherit; font-size:11.5px; padding:6px 12px; border-radius:var(--radius); cursor:pointer;
+  }
+  .book-open-btn{ background:var(--ink); color:var(--paper); border:none; white-space:nowrap; }
+  .book-open-btn:hover{ background:#413C33; }
+  .book-del-btn{ background:transparent; border:1px solid var(--line); color:var(--ink-faint); }
+  .book-del-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
 </style>
 </head>
 <body>
@@ -772,10 +811,19 @@
 
 <div id="appRoot">
 
+<div id="library">
+  <div class="library-header">
+    <h1>稿 紙</h1>
+    <div class="subtitle">你的所有作品</div>
+  </div>
+  <button class="lib-add" id="newBookBtn">＋ 新增文章</button>
+  <div id="libraryList"></div>
+</div>
+
 <div id="sidebar">
   <h1>稿 紙</h1>
-
-  <div class="subtitle">寫作軟件原型 · 互動 Demo</div>
+  <button id="toLibraryBtn" class="nav-btn" style="margin-top:8px;">📚 所有文章</button>
+  <div class="subtitle" id="currentBookLabel"></div>
   <ul class="chapter-list" id="chapterList"></ul>
   <button id="addChapterBtn">+ 新增章節</button>
   <button id="foreshadowBtn" class="nav-btn">🧵 伏筆管理</button>
@@ -922,13 +970,27 @@
 
 <script>
 let idSeed = 1;
-const newId = () => 'id' + (idSeed++);
+const newId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + (idSeed++);
 
 let state = null;
 
 function freshState(){
+  return {
+    currentBookId: null,
+    books: [],
+    settings: { gridBg: false, keySound: false }
+  };
+}
+
+function freshBook(title){
   const chapterId = newId();
   return {
+    id: newId(),
+    title: title || '未命名作品',
+    folder: '',
+    tags: '',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     currentChapterId: chapterId,
     wordMode: 'auto',
     chapters: [
@@ -936,9 +998,12 @@ function freshState(){
     ],
     foreshadows: [],
     characters: [],
-    versionHistory: [],
-    settings: { gridBg: false, keySound: false }
+    versionHistory: []
   };
+}
+
+function currentBook(){
+  return state.books.find(b => b.id === state.currentBookId);
 }
 
 function normalizeSettings(){
@@ -948,7 +1013,7 @@ function normalizeSettings(){
 }
 
 function currentChapter(){
-  return state.chapters.find(c => c.id === state.currentChapterId);
+  return currentBook().chapters.find(c => c.id === currentBook().currentChapterId);
 }
 
 /* ---------------- undo / redo ---------------- */
@@ -993,8 +1058,8 @@ function undo(){
   if(undoStack.length === 0) return;
   redoStack.push(deepClone(state));
   state = undoStack.pop();
-  if(!state.chapters.find(c => c.id === state.currentChapterId)){
-    state.currentChapterId = state.chapters[0] ? state.chapters[0].id : null;
+  if(!currentBook().chapters.find(c => c.id === currentBook().currentChapterId)){
+    currentBook().currentChapterId = currentBook().chapters[0] ? currentBook().chapters[0].id : null;
   }
   updateHistButtons();
   renderAll();
@@ -1031,7 +1096,7 @@ function isCJKDominant(text){
   return (cjk / total) > 0.3;
 }
 function wordCount(text, mode){
-  mode = mode || state.wordMode;
+  mode = mode || (currentBook() && currentBook().wordMode) || 'auto';
   if(mode === 'auto') mode = isCJKDominant(text) ? 'cjk' : 'enWords';
   if(mode === 'cjk') return countCJKWithPunct(text);
   if(mode === 'cjkOnly') return countCJK(text);
@@ -1039,9 +1104,9 @@ function wordCount(text, mode){
   return countCJKWithPunct(text);
 }
 function modeLabel(){
-  const m = state.wordMode === 'auto'
+  const m = currentBook().wordMode === 'auto'
     ? (isCJKDominant(currentChapter().sections.map(s=>s.text).join('')) ? 'cjk' : 'enWords')
-    : state.wordMode;
+    : currentBook().wordMode;
   return { cjk:'字', cjkOnly:'漢字', enWords:'詞' }[m] || '字';
 }
 
@@ -1049,12 +1114,12 @@ function modeLabel(){
 function renderSidebar(){
   const list = document.getElementById('chapterList');
   list.innerHTML = '';
-  state.chapters.forEach(ch => {
+  currentBook().chapters.forEach(ch => {
     const total = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
     const li = document.createElement('li');
-    li.className = 'chapter-item' + (ch.id === state.currentChapterId ? ' active' : '');
+    li.className = 'chapter-item' + (ch.id === currentBook().currentChapterId ? ' active' : '');
     li.innerHTML = `<span>${escapeHtml(ch.title || '未命名章節')}</span><span class="cnt">${total}</span>`;
-    li.onclick = () => { state.currentChapterId = ch.id; renderAll(); };
+    li.onclick = () => { currentBook().currentChapterId = ch.id; renderAll(); };
     list.appendChild(li);
   });
 }
@@ -1172,7 +1237,7 @@ function updateStrip(){
     ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
   document.getElementById('chapterSectionCount').textContent = ch.sections.length;
   document.getElementById('bookWordCount').textContent =
-    state.chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text), 0), 0);
+    currentBook().chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text), 0), 0);
 }
 
 function flashAutosave(){
@@ -1239,7 +1304,7 @@ function escapeHtml(str){
 function renderOverview(){
   const tbl = document.getElementById('ovTable');
   let total = 0;
-  let rows = state.chapters.map(ch => {
+  let rows = currentBook().chapters.map(ch => {
     const wc = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
     total += wc;
     return `<tr><td>${escapeHtml(ch.title)}</td><td class="num">${ch.sections.length}</td><td class="num">${wc}</td></tr>`;
@@ -1247,7 +1312,7 @@ function renderOverview(){
   tbl.innerHTML = `
     <tr><th>章節</th><th>節數</th><th>字數</th></tr>
     ${rows}
-    <tr class="total"><td>總計</td><td class="num">${state.chapters.reduce((s,c)=>s+c.sections.length,0)}</td><td class="num">${total}</td></tr>
+    <tr class="total"><td>總計</td><td class="num">${currentBook().chapters.reduce((s,c)=>s+c.sections.length,0)}</td><td class="num">${total}</td></tr>
   `;
 
   const bars = document.getElementById('bars');
@@ -1265,11 +1330,95 @@ function renderOverview(){
 function renderAll(){
   const ch = currentChapter();
   document.getElementById('chapterTitle').value = ch.title;
+  document.getElementById('currentBookLabel').textContent = currentBook().title;
   renderSidebar();
   renderRows();
   updateStrip();
   updateHistButtons();
 }
+
+/* ---------------- library (book list) ---------------- */
+function bookWordTotal(book){
+  return book.chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text, book.wordMode), 0), 0);
+}
+
+function showLibrary(){
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('library').style.display = 'block';
+  state.currentBookId = null;
+  renderLibrary();
+}
+
+function openBook(id){
+  state.currentBookId = id;
+  document.getElementById('library').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('main').style.display = 'flex';
+  undoStack = []; redoStack = []; pendingSnapshot = null;
+  renderAll();
+  showView('edit');
+}
+
+function renderLibrary(){
+  const list = document.getElementById('libraryList');
+  if(state.books.length === 0){
+    list.innerHTML = '<div class="lib-empty">還沒有任何作品，點上面「＋ 新增文章」開始寫作</div>';
+    return;
+  }
+  const sorted = [...state.books].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  list.innerHTML = '';
+  sorted.forEach(book => {
+    const card = document.createElement('div');
+    card.className = 'book-card';
+    const wc = bookWordTotal(book);
+    const chCount = book.chapters.length;
+    const t = new Date(book.updatedAt || book.createdAt || Date.now());
+    const timeStr = `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
+    card.innerHTML = `
+      <div class="book-card-main">
+        <input class="book-title" value="${escapeHtml(book.title)}" placeholder="作品名稱" />
+        <div class="book-meta-row">
+          <input class="book-folder" placeholder="資料夾／分類" value="${escapeHtml(book.folder || '')}" />
+          <input class="book-tags" placeholder="標籤，以逗號分隔" value="${escapeHtml(book.tags || '')}" />
+        </div>
+        <div class="book-stats">${chCount} 章 · 共 ${wc} 字 · 最後編輯 ${timeStr}</div>
+      </div>
+      <div class="book-actions">
+        <button class="book-open-btn" data-open="${book.id}">開啟</button>
+        <button class="book-del-btn" data-del="${book.id}">刪除</button>
+      </div>
+    `;
+    card.querySelector('.book-title').addEventListener('input', e => { book.title = e.target.value; book.updatedAt = Date.now(); schedulePersist(); });
+    card.querySelector('.book-title').addEventListener('click', e => e.stopPropagation());
+    card.querySelector('.book-folder').addEventListener('click', e => e.stopPropagation());
+    card.querySelector('.book-tags').addEventListener('click', e => e.stopPropagation());
+    card.querySelector('.book-folder').addEventListener('input', e => { book.folder = e.target.value; schedulePersist(); });
+    card.querySelector('.book-tags').addEventListener('input', e => { book.tags = e.target.value; schedulePersist(); });
+    card.querySelector('[data-open]').onclick = () => openBook(book.id);
+    card.querySelector('[data-del]').onclick = (e) => {
+      e.stopPropagation();
+      if(!confirm(`確定要刪除「${book.title}」嗎？此動作無法復原。`)) return;
+      state.books = state.books.filter(b => b.id !== book.id);
+      schedulePersist();
+      renderLibrary();
+    };
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('newBookBtn').onclick = () => {
+  const book = freshBook('未命名作品');
+  state.books.push(book);
+  schedulePersist();
+  openBook(book.id);
+};
+
+document.getElementById('toLibraryBtn').onclick = () => {
+  flushPending();
+  persistNow();
+  showLibrary();
+};
 
 document.getElementById('chapterTitle').addEventListener('input', e => {
   captureForEdit();
@@ -1278,14 +1427,14 @@ document.getElementById('chapterTitle').addEventListener('input', e => {
 });
 
 document.getElementById('modeSelect').addEventListener('change', e => {
-  state.wordMode = e.target.value;
+  currentBook().wordMode = e.target.value;
   renderRows(); updateStrip();
   schedulePersist();
 });
 
 document.getElementById('addChapterBtn').onclick = () => {
   const ch = { id: newId(), title: '新章節', sections: [{ id: newId(), text: '', note: '' }] };
-  withHistory(() => { state.chapters.push(ch); state.currentChapterId = ch.id; });
+  withHistory(() => { currentBook().chapters.push(ch); currentBook().currentChapterId = ch.id; });
   renderAll();
 };
 
@@ -1312,14 +1461,14 @@ document.getElementById('endSessionBtn').onclick = () => {
 function renderForeshadow(){
   const list = document.getElementById('fsList');
   list.innerHTML = '';
-  state.foreshadows.forEach(fs => {
+  currentBook().foreshadows.forEach(fs => {
     const card = document.createElement('div');
     card.className = 'fs-card';
-    const chapter = state.chapters.find(c => c.id === fs.chapterId) || state.chapters[0];
+    const chapter = currentBook().chapters.find(c => c.id === fs.chapterId) || currentBook().chapters[0];
     if(fs.chapterId !== chapter.id) fs.chapterId = chapter.id;
     if(fs.sectionId && !chapter.sections.find(s => s.id === fs.sectionId)) fs.sectionId = null;
 
-    const chapterOptions = state.chapters.map(c =>
+    const chapterOptions = currentBook().chapters.map(c =>
       `<option value="${c.id}" ${c.id === fs.chapterId ? 'selected' : ''}>${escapeHtml(c.title)}</option>`
     ).join('');
     const sectionOptions = ['<option value="">（整章）</option>'].concat(
@@ -1356,7 +1505,7 @@ function renderForeshadow(){
     });
     card.querySelector('.fs-del').onclick = () => {
       withHistory(() => {
-        state.foreshadows = state.foreshadows.filter(f => f.id !== fs.id);
+        currentBook().foreshadows = currentBook().foreshadows.filter(f => f.id !== fs.id);
       });
       renderForeshadow();
     };
@@ -1366,7 +1515,7 @@ function renderForeshadow(){
 
 document.getElementById('fsAdd').onclick = () => {
   withHistory(() => {
-    state.foreshadows.push({ id: newId(), title: '新伏筆', desc: '', chapterId: state.currentChapterId, sectionId: null, status: '埋下' });
+    currentBook().foreshadows.push({ id: newId(), title: '新伏筆', desc: '', chapterId: currentBook().currentChapterId, sectionId: null, status: '埋下' });
   });
   renderForeshadow();
 };
@@ -1379,7 +1528,7 @@ function renderExportList(){
     list.innerHTML = '<div style="color:var(--ink-faint); font-size:12px;">將匯出全部章節，依目前排序</div>';
     return;
   }
-  list.innerHTML = state.chapters.map(c => `
+  list.innerHTML = currentBook().chapters.map(c => `
     <label><input type="checkbox" class="exp-chk" value="${c.id}" checked /> ${escapeHtml(c.title)}</label>
   `).join('');
 }
@@ -1410,10 +1559,10 @@ document.getElementById('scopeSelect').onclick = () => {
 document.getElementById('exportConfirm').onclick = () => {
   let chapters;
   if(exportScope === 'all'){
-    chapters = state.chapters;
+    chapters = currentBook().chapters;
   } else {
     const checked = Array.from(document.querySelectorAll('.exp-chk:checked')).map(el => el.value);
-    chapters = state.chapters.filter(c => checked.includes(c.id));
+    chapters = currentBook().chapters.filter(c => checked.includes(c.id));
   }
   if(chapters.length === 0){ alert('請至少選擇一章'); return; }
   const text = chapters.map(c =>
@@ -1435,7 +1584,7 @@ document.getElementById('exportConfirm').onclick = () => {
 function renderCharacters(){
   const list = document.getElementById('charList');
   list.innerHTML = '';
-  state.characters.forEach(ch => {
+  currentBook().characters.forEach(ch => {
     const card = document.createElement('div');
     card.className = 'char-card';
     card.innerHTML = `
@@ -1450,7 +1599,7 @@ function renderCharacters(){
     card.querySelector('.char-tag').addEventListener('input', e => { captureForEdit(); ch.tag = e.target.value; });
     card.querySelector('.char-desc').addEventListener('input', e => { captureForEdit(); ch.desc = e.target.value; });
     card.querySelector('.char-del').onclick = () => {
-      withHistory(() => { state.characters = state.characters.filter(c => c.id !== ch.id); });
+      withHistory(() => { currentBook().characters = currentBook().characters.filter(c => c.id !== ch.id); });
       renderCharacters();
     };
     list.appendChild(card);
@@ -1459,17 +1608,17 @@ function renderCharacters(){
 
 document.getElementById('charAdd').onclick = () => {
   withHistory(() => {
-    state.characters.push({ id: newId(), name: '新角色', tag: '', desc: '' });
+    currentBook().characters.push({ id: newId(), name: '新角色', tag: '', desc: '' });
   });
   renderCharacters();
 };
 
 /* ---------------- version history ---------------- */
 function saveSnapshot(label){
-  state.versionHistory.unshift({
-    id: newId(), label, ts: new Date().toISOString(), chapters: deepClone(state.chapters)
+  currentBook().versionHistory.unshift({
+    id: newId(), label, ts: new Date().toISOString(), chapters: deepClone(currentBook().chapters)
   });
-  if(state.versionHistory.length > 100) state.versionHistory.pop();
+  if(currentBook().versionHistory.length > 100) currentBook().versionHistory.pop();
 }
 
 function formatTs(iso){
@@ -1565,12 +1714,12 @@ function computeChapterDiff(vc, cur){
 
 function renderHistory(){
   const list = document.getElementById('histList');
-  if(state.versionHistory.length === 0){
+  if(currentBook().versionHistory.length === 0){
     list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有保存的版本，結束寫作或手動備份後會出現在這裡</div>';
     return;
   }
   list.innerHTML = '';
-  state.versionHistory.forEach(v => {
+  currentBook().versionHistory.forEach(v => {
     const item = document.createElement('div');
     item.className = 'hv-item';
     item.innerHTML = `
@@ -1589,9 +1738,9 @@ function renderHistory(){
       if(!confirm(`確定要還原到「${v.label}（${formatTs(v.ts)}）」嗎？目前內容會先存入撤銷紀錄，仍可 Ctrl+Z 復原。`)) return;
       flushPending();
       pushHistory(deepClone(state));
-      state.chapters = deepClone(v.chapters);
-      if(!state.chapters.find(c => c.id === state.currentChapterId)){
-        state.currentChapterId = state.chapters[0] ? state.chapters[0].id : null;
+      currentBook().chapters = deepClone(v.chapters);
+      if(!currentBook().chapters.find(c => c.id === currentBook().currentChapterId)){
+        currentBook().currentChapterId = currentBook().chapters[0] ? currentBook().chapters[0].id : null;
       }
       renderAll();
       showView('edit');
@@ -1604,11 +1753,11 @@ function renderHistory(){
         diffBox.dataset.built = '1';
         const chapterIds = [];
         v.chapters.forEach(vc => chapterIds.push(vc.id));
-        state.chapters.forEach(c => { if(!chapterIds.includes(c.id)) chapterIds.push(c.id); });
+        currentBook().chapters.forEach(c => { if(!chapterIds.includes(c.id)) chapterIds.push(c.id); });
 
         diffBox.innerHTML = chapterIds.map(id => {
           const vc = v.chapters.find(c => c.id === id);
-          const cur = state.chapters.find(c => c.id === id);
+          const cur = currentBook().chapters.find(c => c.id === id);
           const title = (vc || cur).title;
           if(!vc){
             return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-pos">新增章節</span></div></div>`;
@@ -1760,21 +1909,31 @@ function setAutosaveStatus(status){
   }
 }
 
+async function persistNow(){
+  if(!vaultKey || !state) return;
+  clearTimeout(persistTimer);
+  try{
+    const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
+    await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
+    setAutosaveStatus('saved');
+  } catch(err){
+    console.error('persist failed', err);
+    setAutosaveStatus('error');
+  }
+}
+
 function schedulePersist(){
   if(!vaultKey || !state) return;
+  if(currentBook()) currentBook().updatedAt = Date.now();
   setAutosaveStatus('saving');
   clearTimeout(persistTimer);
-  persistTimer = setTimeout(async () => {
-    try{
-      const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
-      await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
-      setAutosaveStatus('saved');
-    } catch(err){
-      console.error('persist failed', err);
-      setAutosaveStatus('error');
-    }
-  }, 600);
+  persistTimer = setTimeout(persistNow, 600);
 }
+
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) persistNow();
+});
+window.addEventListener('pagehide', () => { persistNow(); });
 
 /* ================= gate / boot ================= */
 function showGate(mode){
@@ -1792,7 +1951,7 @@ function enterApp(loadedState){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
   undoStack = []; redoStack = []; pendingSnapshot = null;
-  renderAll();
+  showLibrary();
 }
 
 async function boot(){
@@ -1864,8 +2023,9 @@ document.getElementById('unlockForm').addEventListener('submit', async e => {
   }
 });
 
-document.getElementById('lockBtn').onclick = () => {
+document.getElementById('lockBtn').onclick = async () => {
   flushPending();
+  await persistNow();
   vaultKey = null; vaultSalt = null; state = null;
   showGate('unlock');
 };
@@ -1918,7 +2078,8 @@ document.getElementById('doRestoreBackup').onclick = async () => {
     state = loaded;
     normalizeSettings();
     undoStack = []; redoStack = []; pendingSnapshot = null;
-    renderAll();
+    document.getElementById('backupBackdrop').style.display = 'none';
+    showLibrary();
     schedulePersist();
     msg.style.color = '#4C7A3E';
     msg.textContent = '已還原';
