@@ -749,17 +749,91 @@
   #library{
     display:none; flex:1; overflow-y:auto; padding: 40px 56px; max-width:960px; margin:0 auto; width:100%;
   }
+  .library-header{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+  }
   .library-header h1{
     font-family:"Noto Serif SC", serif; font-size:26px; letter-spacing:3px; margin:0 0 2px;
   }
   .library-header .subtitle{ color:var(--ink-faint); font-size:12.5px; margin-bottom:24px; }
+  .library-header-actions{ display:flex; gap:8px; flex-shrink:0; padding-top:4px; }
+  .lib-icon-btn{
+    background:var(--white); border:1px solid var(--line); color:var(--ink-soft);
+    padding:8px 14px; border-radius:var(--radius); font-size:12px; cursor:pointer; font-family:inherit;
+    white-space:nowrap;
+  }
+  .lib-icon-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
   .lib-add{
     border:1px dashed var(--line); background:transparent; color:var(--ink-soft);
     padding:12px 16px; border-radius:var(--radius); font-size:13px; cursor:pointer;
-    font-family:inherit; margin-bottom:24px; width:100%;
+    font-family:inherit; margin-bottom:16px; width:100%;
   }
   .lib-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
   .lib-empty{ text-align:center; color:var(--ink-faint); font-size:13px; padding:40px 0; }
+
+  /* ---------- Library filter bar ---------- */
+  .lib-filter-bar{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:12px 16px; margin-bottom:20px;
+  }
+  .lib-filter-group{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .lib-filter-group + .lib-filter-group{ margin-top:8px; }
+  .lib-filter-label{ font-size:11px; color:var(--ink-faint); flex-shrink:0; width:40px; }
+  .lib-chip-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .lib-chip{
+    font-family:inherit; font-size:11.5px; padding:4px 12px; border-radius:12px; cursor:pointer;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink-soft);
+  }
+  .lib-chip:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .lib-chip.active{ background:var(--vermillion); border-color:var(--vermillion); color:var(--white); }
+
+  /* ---------- Stats modal (today overview + calendar) ---------- */
+  #statsBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:50; align-items:center; justify-content:center;
+  }
+  #statsModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:420px; max-height:88vh; overflow-y:auto; padding:24px;
+  }
+  #statsModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 4px; }
+  #statsModal .today-range{ font-size:11.5px; color:var(--ink-faint); margin-bottom:16px; }
+  .cal-head{
+    display:flex; align-items:center; justify-content:space-between; margin-top:6px; margin-bottom:10px;
+  }
+  .cal-head button{
+    width:26px; height:26px; border:1px solid var(--line); background:var(--white); color:var(--ink-soft);
+    border-radius:var(--radius); cursor:pointer; font-size:14px;
+  }
+  .cal-head button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .cal-head span{ font-family:"Noto Serif SC", serif; font-size:13.5px; color:var(--ink); }
+  .cal-weekdays{
+    display:grid; grid-template-columns: repeat(7, 1fr); text-align:center;
+    font-size:10.5px; color:var(--ink-faint); margin-bottom:4px;
+  }
+  .cal-grid{
+    display:grid; grid-template-columns: repeat(7, 1fr); gap:3px;
+  }
+  .cal-day{
+    aspect-ratio:1; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:10px; background:var(--line-soft); color:var(--ink-faint); gap:1px;
+  }
+  .cal-day.empty{ background:transparent; }
+  .cal-day .cd-num{ font-size:10px; }
+  .cal-day .cd-chars{ font-size:8px; }
+  .cal-day.met{ background:#DCEEDA; color:#2F5C28; }
+  .cal-day.under{ background:var(--vermillion-bg); color:var(--vermillion); }
+  .cal-day.is-today{ box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .cal-legend{ display:flex; gap:14px; margin-top:12px; font-size:10.5px; color:var(--ink-faint); }
+  .cal-dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+  .cal-dot.cal-met{ background:#DCEEDA; box-shadow: inset 0 0 0 1px #2F5C28; }
+  .cal-dot.cal-under{ background:var(--vermillion-bg); box-shadow: inset 0 0 0 1px var(--vermillion); }
+  .cal-dot.cal-none{ background:var(--line-soft); }
+  #statsCloseBtn{
+    width:100%; margin-top:18px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
+
 
   /* ---------- Today overview card ---------- */
   .today-card{
@@ -901,15 +975,36 @@
 
 <div id="library">
   <div class="library-header">
-    <h1>稿 紙</h1>
-    <div class="subtitle">你的所有作品</div>
+    <div>
+      <h1>稿 紙</h1>
+      <div class="subtitle">你的所有作品</div>
+    </div>
+    <div class="library-header-actions">
+      <button class="lib-icon-btn" id="openStatsBtn">📊 今日概覽</button>
+      <button class="lib-icon-btn" id="librarySettingsBtn">⚙ 設定</button>
+    </div>
   </div>
 
-  <div class="today-card">
-    <div class="today-head">
-      <h3>今日概覽</h3>
-      <div class="today-range" id="todayRange">尚未開始</div>
+  <button class="lib-add" id="newBookBtn">＋ 新增文章</button>
+
+  <div class="lib-filter-bar" id="libFilterBar" style="display:none;">
+    <div class="lib-filter-group">
+      <span class="lib-filter-label">資料夾</span>
+      <div class="lib-chip-row" id="folderChipRow"></div>
     </div>
+    <div class="lib-filter-group">
+      <span class="lib-filter-label">標籤</span>
+      <div class="lib-chip-row" id="tagChipRow"></div>
+    </div>
+  </div>
+
+  <div id="libraryList"></div>
+</div>
+
+<div id="statsBackdrop">
+  <div id="statsModal">
+    <h3>今日概覽</h3>
+    <div class="today-range" id="todayRange">尚未開始</div>
     <div class="today-grid">
       <div class="today-stat">
         <div class="ts-icon">✎</div>
@@ -936,14 +1031,24 @@
         <div><div class="ts-label">碼字書籍</div><div class="ts-value" id="todayBooks">0<small>本</small></div></div>
       </div>
     </div>
-    <div class="today-trend">
-      <div class="tt-label">近 7 日字數趨勢<span id="todayGoalEditHint">（每日目標可在「設定」調整）</span></div>
-      <div class="tbars" id="todayBars"></div>
-    </div>
-  </div>
 
-  <button class="lib-add" id="newBookBtn">＋ 新增文章</button>
-  <div id="libraryList"></div>
+    <div class="cal-head">
+      <button id="calPrevBtn">‹</button>
+      <span id="calMonthLabel"></span>
+      <button id="calNextBtn">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <span><i class="cal-dot cal-met"></i>達標</span>
+      <span><i class="cal-dot cal-under"></i>未達標</span>
+      <span><i class="cal-dot cal-none"></i>沒有寫作</span>
+    </div>
+
+    <button id="statsCloseBtn">關閉</button>
+  </div>
 </div>
 
 <div id="sidebar">
@@ -1535,7 +1640,6 @@ function showLibrary(){
   document.getElementById('main').style.display = 'none';
   document.getElementById('library').style.display = 'block';
   state.currentBookId = null;
-  renderTodayOverview();
   renderLibrary();
 }
 
@@ -1569,32 +1673,119 @@ function renderTodayOverview(){
   document.getElementById('todayStreak').innerHTML = computeStreak() + '<small>天</small>';
   document.getElementById('todayBooks').innerHTML = entry.bookIds.length + '<small>本</small>';
 
-  const days = [];
-  for(let i = 6; i >= 0; i--){
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const k = todayKey(d);
-    days.push({
-      label: (d.getMonth() + 1) + '/' + d.getDate(),
-      chars: (state.dailyLog[k] && state.dailyLog[k].chars) || 0,
-      isToday: i === 0
+  renderCalendar();
+}
+
+/* ---------------- writing calendar ---------------- */
+let calViewDate = new Date();
+
+function renderCalendar(){
+  normalizeSettings();
+  const year = calViewDate.getFullYear();
+  const month = calViewDate.getMonth();
+  document.getElementById('calMonthLabel').textContent = `${year} 年 ${month + 1} 月`;
+
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const goal = state.settings.dailyGoal;
+  const todayStr = todayKey();
+
+  let cells = '';
+  for(let i = 0; i < startWeekday; i++){
+    cells += '<div class="cal-day empty"></div>';
+  }
+  for(let day = 1; day <= daysInMonth; day++){
+    const d = new Date(year, month, day);
+    const key = todayKey(d);
+    const entry = state.dailyLog[key];
+    const chars = entry ? entry.chars : 0;
+    let cls = 'cal-day';
+    if(chars > 0) cls += (chars >= goal ? ' met' : ' under');
+    if(key === todayStr) cls += ' is-today';
+    cells += `<div class="${cls}" title="${key}：${chars} 字">
+      <span class="cd-num">${day}</span>
+      ${chars > 0 ? `<span class="cd-chars">${chars}</span>` : ''}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = cells;
+}
+
+let libFilterFolder = null; // null = 全部
+let libFilterTags = new Set(); // 空集合 = 不限標籤
+
+function getAllFolders(){
+  return [...new Set(state.books.map(b => (b.folder || '').trim()).filter(Boolean))];
+}
+function getAllTags(){
+  const set = new Set();
+  state.books.forEach(b => (b.tags || '').split(',').map(s => s.trim()).filter(Boolean).forEach(t => set.add(t)));
+  return [...set];
+}
+
+function renderFilterBar(){
+  const bar = document.getElementById('libFilterBar');
+  const folders = getAllFolders();
+  const tags = getAllTags();
+  if(state.books.length === 0 || (folders.length === 0 && tags.length === 0)){
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'block';
+
+  const folderRow = document.getElementById('folderChipRow');
+  const folderGroup = folderRow.closest('.lib-filter-group');
+  if(folders.length === 0){
+    folderGroup.style.display = 'none';
+  } else {
+    folderGroup.style.display = 'flex';
+    folderRow.innerHTML = [`<button class="lib-chip${libFilterFolder === null ? ' active' : ''}" data-folder="">全部</button>`]
+      .concat(folders.map(f => `<button class="lib-chip${libFilterFolder === f ? ' active' : ''}" data-folder="${escapeHtml(f)}">${escapeHtml(f)}</button>`))
+      .join('');
+    folderRow.querySelectorAll('[data-folder]').forEach(btn => {
+      btn.onclick = () => { libFilterFolder = btn.dataset.folder || null; renderLibrary(); };
     });
   }
-  const max = Math.max(...days.map(d => d.chars), 1);
-  document.getElementById('todayBars').innerHTML = days.map(d => `
-    <div class="tbar${d.isToday ? ' is-today' : ''}" style="height:${Math.max(2, d.chars / max * 100)}%">
-      <span>${d.label}</span>
-    </div>
-  `).join('');
+
+  const tagRow = document.getElementById('tagChipRow');
+  const tagGroup = tagRow.closest('.lib-filter-group');
+  if(tags.length === 0){
+    tagGroup.style.display = 'none';
+  } else {
+    tagGroup.style.display = 'flex';
+    tagRow.innerHTML = tags.map(t => `<button class="lib-chip${libFilterTags.has(t) ? ' active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+    tagRow.querySelectorAll('[data-tag]').forEach(btn => {
+      btn.onclick = () => {
+        const t = btn.dataset.tag;
+        if(libFilterTags.has(t)) libFilterTags.delete(t); else libFilterTags.add(t);
+        renderLibrary();
+      };
+    });
+  }
 }
 
 function renderLibrary(){
+  renderFilterBar();
   const list = document.getElementById('libraryList');
   if(state.books.length === 0){
     list.innerHTML = '<div class="lib-empty">還沒有任何作品，點上面「＋ 新增文章」開始寫作</div>';
     return;
   }
-  const sorted = [...state.books].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  let filtered = state.books;
+  if(libFilterFolder !== null){
+    filtered = filtered.filter(b => (b.folder || '').trim() === libFilterFolder);
+  }
+  if(libFilterTags.size > 0){
+    filtered = filtered.filter(b => {
+      const bookTags = (b.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+      return bookTags.some(t => libFilterTags.has(t));
+    });
+  }
+  if(filtered.length === 0){
+    list.innerHTML = '<div class="lib-empty">沒有符合篩選條件的作品</div>';
+    return;
+  }
+  const sorted = [...filtered].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   list.innerHTML = '';
   sorted.forEach(book => {
     const card = document.createElement('div');
@@ -1621,8 +1812,8 @@ function renderLibrary(){
     card.querySelector('.book-title').addEventListener('click', e => e.stopPropagation());
     card.querySelector('.book-folder').addEventListener('click', e => e.stopPropagation());
     card.querySelector('.book-tags').addEventListener('click', e => e.stopPropagation());
-    card.querySelector('.book-folder').addEventListener('input', e => { book.folder = e.target.value; schedulePersist(); });
-    card.querySelector('.book-tags').addEventListener('input', e => { book.tags = e.target.value; schedulePersist(); });
+    card.querySelector('.book-folder').addEventListener('input', e => { book.folder = e.target.value; schedulePersist(); renderFilterBar(); });
+    card.querySelector('.book-tags').addEventListener('input', e => { book.tags = e.target.value; schedulePersist(); renderFilterBar(); });
     card.querySelector('[data-open]').onclick = () => openBook(book.id);
     card.querySelector('[data-del]').onclick = (e) => {
       e.stopPropagation();
@@ -2345,13 +2536,15 @@ document.getElementById('doChangePw').onclick = async () => {
 };
 
 /* ================= settings: grid background + key sound ================= */
-document.getElementById('settingsBtn').onclick = () => {
+function openSettingsModal(){
   normalizeSettings();
   document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   document.getElementById('settingsBackdrop').style.display = 'flex';
-};
+}
+document.getElementById('settingsBtn').onclick = openSettingsModal;
+document.getElementById('librarySettingsBtn').onclick = openSettingsModal;
 document.getElementById('settingsCloseBtn').onclick = () => { document.getElementById('settingsBackdrop').style.display = 'none'; };
 document.getElementById('settingsBackdrop').addEventListener('click', e => {
   if(e.target.id === 'settingsBackdrop') document.getElementById('settingsBackdrop').style.display = 'none';
@@ -2390,46 +2583,34 @@ function playKeySound(){
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const t = audioCtx.currentTime;
 
-    function strike(atTime, vol){
-      // 機械噪音脈衝：模擬字鎚敲擊瞬間的「喀」，比之前更短更尖銳
-      const bufferSize = Math.floor(audioCtx.sampleRate * 0.02);
+    function strike(atTime, vol, freq, dur){
+      // 機械噪音脈衝：模擬字鎚敲擊瞬間的「喀」，高頻、極短、去除低頻濁感以維持乾淨俐落
+      const bufferSize = Math.floor(audioCtx.sampleRate * dur);
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
       for(let i = 0; i < bufferSize; i++){
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3.5);
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 4.5);
       }
       const noise = audioCtx.createBufferSource();
       noise.buffer = buffer;
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 3200 + Math.random() * 1400;
-      bandpass.Q.value = 0.9;
+      bandpass.frequency.value = freq;
+      bandpass.Q.value = 0.7;
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 1500;
+      highpass.frequency.value = 3000;
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(vol, atTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, atTime + 0.018);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0005, atTime + dur);
       noise.connect(bandpass).connect(highpass).connect(noiseGain).connect(audioCtx.destination);
       noise.start(atTime);
-      noise.stop(atTime + 0.02);
+      noise.stop(atTime + dur + 0.002);
     }
 
-    // 主要撞擊聲，隨機再疊一次極輕的回彈聲增加機械質感
-    strike(t, 0.4);
-    if(Math.random() > 0.5) strike(t + 0.012, 0.08);
-
-    // 低頻「噠」：模擬字鎚打在滾筒上的重量感
-    const osc = audioCtx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(150 + Math.random() * 25, t + 0.004);
-    const oscGain = audioCtx.createGain();
-    oscGain.gain.setValueAtTime(0.001, t);
-    oscGain.gain.setValueAtTime(0.14, t + 0.004);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
-    osc.connect(oscGain).connect(audioCtx.destination);
-    osc.start(t);
-    osc.stop(t + 0.055);
+    // 主要撞擊聲：短、尖、乾淨；隨機疊一次更輕更高頻的回彈聲增加機械質感
+    strike(t, 0.45, 4500 + Math.random() * 2000, 0.012);
+    if(Math.random() > 0.4) strike(t + 0.009, 0.1, 6000 + Math.random() * 1500, 0.007);
   } catch(e){ /* audio not available, fail silently */ }
 }
 
@@ -2447,6 +2628,24 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+
+document.getElementById('openStatsBtn').onclick = () => {
+  calViewDate = new Date();
+  renderTodayOverview();
+  document.getElementById('statsBackdrop').style.display = 'flex';
+};
+document.getElementById('statsCloseBtn').onclick = () => { document.getElementById('statsBackdrop').style.display = 'none'; };
+document.getElementById('statsBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'statsBackdrop') document.getElementById('statsBackdrop').style.display = 'none';
+});
+document.getElementById('calPrevBtn').onclick = () => {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() - 1, 1);
+  renderCalendar();
+};
+document.getElementById('calNextBtn').onclick = () => {
+  calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 1);
+  renderCalendar();
+};
 
 boot();
 </script>
