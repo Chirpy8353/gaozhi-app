@@ -834,6 +834,35 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
+  /* ---------- Trash modal ---------- */
+  #trashBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:50; align-items:center; justify-content:center;
+  }
+  #trashModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:400px; max-height:80vh; overflow-y:auto; padding:22px;
+  }
+  #trashModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 4px; }
+  #trashModal .ov-sub{ color:var(--ink-faint); font-size:11.5px; margin-bottom:16px; }
+  .trash-item{
+    display:flex; align-items:center; gap:10px;
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:10px 12px; margin-bottom:8px;
+  }
+  .trash-item-info{ flex:1; min-width:0; }
+  .trash-item-title{ font-family:"Noto Serif SC", serif; font-size:13.5px; color:var(--ink); }
+  .trash-item-meta{ font-size:10.5px; color:var(--ink-faint); margin-top:2px; }
+  .trash-item-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .trash-item-actions button{
+    font-family:inherit; font-size:11px; padding:5px 10px; border-radius:var(--radius); cursor:pointer;
+    border:1px solid var(--line); background:transparent; color:var(--ink-soft);
+  }
+  .trash-item-actions button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  #trashCloseBtn{
+    width:100%; margin-top:10px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
 
   /* ---------- Today overview card ---------- */
   .today-card{
@@ -890,11 +919,13 @@
   .book-title{
     font-family:"Noto Serif SC", serif; font-size:16px; font-weight:600; border:none; outline:none;
     background:transparent; color:var(--ink); width:100%; margin-bottom:8px; cursor:text;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .book-meta-row{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
   .book-meta-row input{
     font-family:inherit; font-size:11px; color:var(--ink-soft); background:var(--paper);
     border:1px solid var(--line); border-radius:12px; padding:4px 10px; flex:1; min-width:0; box-sizing:border-box;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .book-stats{
     font-size:11px; color:var(--ink-faint); margin-top:auto; padding-top:10px;
@@ -981,6 +1012,7 @@
     </div>
     <div class="library-header-actions">
       <button class="lib-icon-btn" id="openStatsBtn">📊 今日概覽</button>
+      <button class="lib-icon-btn" id="openTrashBtn">🗑 回收箱</button>
       <button class="lib-icon-btn" id="librarySettingsBtn">⚙ 設定</button>
     </div>
   </div>
@@ -1048,6 +1080,15 @@
     </div>
 
     <button id="statsCloseBtn">關閉</button>
+  </div>
+</div>
+
+<div id="trashBackdrop">
+  <div id="trashModal">
+    <h3>回收箱</h3>
+    <div class="ov-sub">刪除的作品會先保留 30 天，超過後才會自動永久清除</div>
+    <div id="trashList"></div>
+    <button id="trashCloseBtn">關閉</button>
   </div>
 </div>
 
@@ -1215,6 +1256,7 @@ function freshState(){
   return {
     currentBookId: null,
     books: [],
+    trash: [],
     dailyLog: {},
     settings: { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 }
   };
@@ -1244,6 +1286,8 @@ function currentBook(){
   return state.books.find(b => b.id === state.currentBookId);
 }
 
+const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
+
 function normalizeSettings(){
   if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
@@ -1251,6 +1295,15 @@ function normalizeSettings(){
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
   if(!state.dailyLog) state.dailyLog = {};
+  if(!state.trash) state.trash = [];
+}
+
+function purgeOldTrash(){
+  if(!state.trash) { state.trash = []; return; }
+  const now = Date.now();
+  const before = state.trash.length;
+  state.trash = state.trash.filter(b => (now - (b.deletedAt || 0)) < TRASH_RETENTION_MS);
+  return before !== state.trash.length;
 }
 
 /* ---------------- writing activity tracking ---------------- */
@@ -1796,7 +1849,7 @@ function renderLibrary(){
     const timeStr = `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
     card.innerHTML = `
       <div class="book-card-main">
-        <input class="book-title" value="${escapeHtml(book.title)}" placeholder="作品名稱" />
+        <input class="book-title" value="${escapeHtml(book.title)}" placeholder="作品名稱" title="${escapeHtml(book.title)}" />
         <div class="book-meta-row">
           <input class="book-folder" placeholder="資料夾／分類" value="${escapeHtml(book.folder || '')}" />
           <input class="book-tags" placeholder="標籤，以逗號分隔" value="${escapeHtml(book.tags || '')}" />
@@ -1808,7 +1861,7 @@ function renderLibrary(){
         <button class="book-del-btn" data-del="${book.id}">刪除</button>
       </div>
     `;
-    card.querySelector('.book-title').addEventListener('input', e => { book.title = e.target.value; book.updatedAt = Date.now(); schedulePersist(); });
+    card.querySelector('.book-title').addEventListener('input', e => { book.title = e.target.value; book.updatedAt = Date.now(); e.target.title = e.target.value; schedulePersist(); });
     card.querySelector('.book-title').addEventListener('click', e => e.stopPropagation());
     card.querySelector('.book-folder').addEventListener('click', e => e.stopPropagation());
     card.querySelector('.book-tags').addEventListener('click', e => e.stopPropagation());
@@ -1817,8 +1870,10 @@ function renderLibrary(){
     card.querySelector('[data-open]').onclick = () => openBook(book.id);
     card.querySelector('[data-del]').onclick = (e) => {
       e.stopPropagation();
-      if(!confirm(`確定要刪除「${book.title}」嗎？此動作無法復原。`)) return;
+      if(!confirm(`確定要刪除「${book.title}」嗎？會先移到回收箱，30 天內都可以還原。`)) return;
       state.books = state.books.filter(b => b.id !== book.id);
+      book.deletedAt = Date.now();
+      state.trash.push(book);
       schedulePersist();
       renderLibrary();
     };
@@ -2369,6 +2424,7 @@ function enterApp(loadedState){
   state = loadedState;
   idSeed = 1;
   normalizeSettings();
+  if(purgeOldTrash()) schedulePersist();
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
   undoStack = []; redoStack = []; pendingSnapshot = null;
@@ -2583,34 +2639,29 @@ function playKeySound(){
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const t = audioCtx.currentTime;
 
-    function strike(atTime, vol, freq, dur){
-      // 機械噪音脈衝：模擬字鎚敲擊瞬間的「喀」，高頻、極短、去除低頻濁感以維持乾淨俐落
-      const bufferSize = Math.floor(audioCtx.sampleRate * dur);
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for(let i = 0; i < bufferSize; i++){
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 4.5);
-      }
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buffer;
-      const bandpass = audioCtx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.value = freq;
-      bandpass.Q.value = 0.7;
-      const highpass = audioCtx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.value = 3000;
-      const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(vol, atTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.0005, atTime + dur);
-      noise.connect(bandpass).connect(highpass).connect(noiseGain).connect(audioCtx.destination);
-      noise.start(atTime);
-      noise.stop(atTime + dur + 0.002);
+    // 單一噪音脈衝，只用高通濾波去掉所有低頻，避免殘留悶濁感；時長極短維持俐落
+    const dur = 0.008;
+    const bufferSize = Math.floor(audioCtx.sampleRate * dur);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i = 0; i < bufferSize; i++){
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 6);
     }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
 
-    // 主要撞擊聲：短、尖、乾淨；隨機疊一次更輕更高頻的回彈聲增加機械質感
-    strike(t, 0.45, 4500 + Math.random() * 2000, 0.012);
-    if(Math.random() > 0.4) strike(t + 0.009, 0.1, 6000 + Math.random() * 1500, 0.007);
+    const highpass = audioCtx.createBiquadFilter();
+    highpass.type = 'highpass';
+    highpass.frequency.value = 4200 + Math.random() * 1200;
+    highpass.Q.value = 0.4;
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.55, t);
+    gain.gain.exponentialRampToValueAtTime(0.0004, t + dur);
+
+    noise.connect(highpass).connect(gain).connect(audioCtx.destination);
+    noise.start(t);
+    noise.stop(t + dur + 0.002);
   } catch(e){ /* audio not available, fail silently */ }
 }
 
@@ -2646,6 +2697,64 @@ document.getElementById('calNextBtn').onclick = () => {
   calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 1);
   renderCalendar();
 };
+
+/* ---------------- trash (recycle bin) ---------------- */
+function renderTrash(){
+  const list = document.getElementById('trashList');
+  purgeOldTrash();
+  if(state.trash.length === 0){
+    list.innerHTML = '<div class="lib-empty">回收箱是空的</div>';
+    return;
+  }
+  const sorted = [...state.trash].sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+  list.innerHTML = '';
+  sorted.forEach(book => {
+    const daysLeft = Math.max(0, Math.ceil((TRASH_RETENTION_MS - (Date.now() - (book.deletedAt || 0))) / 86400000));
+    const item = document.createElement('div');
+    item.className = 'trash-item';
+    item.innerHTML = `
+      <div class="trash-item-info">
+        <div class="trash-item-title">${escapeHtml(book.title)}</div>
+        <div class="trash-item-meta">${bookWordTotal(book)} 字 · 還剩 ${daysLeft} 天自動清除</div>
+      </div>
+      <div class="trash-item-actions">
+        <button data-restore>還原</button>
+        <button data-purge>永久刪除</button>
+      </div>
+    `;
+    item.querySelector('[data-restore]').onclick = () => {
+      state.trash = state.trash.filter(b => b.id !== book.id);
+      delete book.deletedAt;
+      book.updatedAt = Date.now();
+      state.books.push(book);
+      schedulePersist();
+      renderTrash();
+      renderLibrary();
+    };
+    item.querySelector('[data-purge]').onclick = () => {
+      if(!confirm(`確定要永久刪除「${book.title}」嗎？這次真的無法復原。`)) return;
+      state.trash = state.trash.filter(b => b.id !== book.id);
+      schedulePersist();
+      renderTrash();
+    };
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('openTrashBtn').onclick = () => {
+  renderTrash();
+  document.getElementById('trashBackdrop').style.display = 'flex';
+};
+document.getElementById('trashCloseBtn').onclick = () => {
+  document.getElementById('trashBackdrop').style.display = 'none';
+  renderLibrary();
+};
+document.getElementById('trashBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'trashBackdrop'){
+    document.getElementById('trashBackdrop').style.display = 'none';
+    renderLibrary();
+  }
+});
 
 boot();
 </script>
