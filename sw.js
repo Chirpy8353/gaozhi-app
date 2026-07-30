@@ -1,8 +1,18 @@
-const CACHE_NAME = 'gaozhi-cache-v2';
+const CACHE_NAME = 'gaozhi-cache-v3';
 const CORE_ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './sounds/click1.mp3',
+  './sounds/click2.mp3',
+  './sounds/click3.mp3',
+  './sounds/click4.mp3',
+  './sounds/click5.mp3',
+  './sounds/click6.mp3',
+  './sounds/click7.mp3',
+  './sounds/click8.mp3',
+  './sounds/click9.mp3',
+  './sounds/click10.mp3'
 ];
 
 self.addEventListener('install', event => {

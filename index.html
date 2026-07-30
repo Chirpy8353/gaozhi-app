@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --paper: #FAF6EE;
@@ -745,6 +746,20 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
+  /* ---------- Google Drive sync ---------- */
+  .sync-section{
+    border-top:1px dashed var(--line-soft); padding-top:14px; margin-top:14px;
+  }
+  .sync-section h4{ font-size:12.5px; color:var(--ink); margin:0 0 8px; }
+  .sync-status{
+    font-size:11.5px; color:var(--ink-faint); margin-bottom:10px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .sync-status.connected{ color:#4C7A3E; }
+  .sync-status .dot{ width:6px; height:6px; border-radius:50%; background:var(--ink-faint); display:inline-block; }
+  .sync-status.connected .dot{ background:#4C7A3E; }
+  .sync-actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+
   /* ---------- Library (book list) ---------- */
   #library{
     display:none; flex:1; overflow-y:auto; padding: 40px 56px; max-width:960px; margin:0 auto; width:100%;
@@ -1242,6 +1257,18 @@
       <span>每日字數目標<small>用於「今日概覽」的完成度計算</small></span>
       <input type="number" id="dailyGoalInput" min="1" step="100" style="width:80px; padding:6px 8px; font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); color:var(--ink); text-align:right;" />
     </div>
+
+    <div class="sync-section">
+      <h4>☁ 雲端同步（Google Drive）</h4>
+      <div class="sync-status" id="syncStatus">尚未連結 Google 帳號</div>
+      <button class="backup-btn" id="googleSignInBtn">連結 Google 帳號</button>
+      <div class="sync-actions" id="syncActions" style="display:none;">
+        <button class="backup-btn primary" id="driveUploadBtn">⬆ 上傳目前資料到 Drive</button>
+        <button class="backup-btn" id="driveDownloadBtn">⬇ 從 Drive 下載並還原</button>
+      </div>
+      <div class="backup-msg" id="syncMsg"></div>
+    </div>
+
     <button id="settingsCloseBtn">關閉</button>
   </div>
 </div>
@@ -2428,6 +2455,7 @@ function enterApp(loadedState){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
   undoStack = []; redoStack = []; pendingSnapshot = null;
+  if(state.settings.keySound) loadKeyClickBuffers();
   showLibrary();
 }
 
@@ -2633,35 +2661,43 @@ document.getElementById('sidebarToggleBtn').onclick = () => {
 };
 
 let audioCtx = null;
+let keyClickBuffers = [];
+let keyClickBuffersLoading = false;
+
+async function loadKeyClickBuffers(){
+  if(keyClickBuffersLoading || keyClickBuffers.length > 0) return;
+  keyClickBuffersLoading = true;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const files = Array.from({ length: 10 }, (_, i) => `sounds/click${i + 1}.mp3`);
+    const buffers = await Promise.all(files.map(async url => {
+      try{
+        const res = await fetch(url);
+        const arr = await res.arrayBuffer();
+        return await audioCtx.decodeAudioData(arr);
+      } catch(e){ return null; }
+    }));
+    keyClickBuffers = buffers.filter(Boolean);
+  } catch(e){ /* ignore, will just have no sound */ }
+  keyClickBuffersLoading = false;
+}
+
 function playKeySound(){
   try{
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    const t = audioCtx.currentTime;
+    if(keyClickBuffers.length === 0){ loadKeyClickBuffers(); return; }
 
-    // 單一噪音脈衝，只用高通濾波去掉所有低頻，避免殘留悶濁感；時長極短維持俐落
-    const dur = 0.008;
-    const bufferSize = Math.floor(audioCtx.sampleRate * dur);
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for(let i = 0; i < bufferSize; i++){
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 6);
-    }
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buffer;
-
-    const highpass = audioCtx.createBiquadFilter();
-    highpass.type = 'highpass';
-    highpass.frequency.value = 4200 + Math.random() * 1200;
-    highpass.Q.value = 0.4;
+    const buffer = keyClickBuffers[Math.floor(Math.random() * keyClickBuffers.length)];
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = 0.94 + Math.random() * 0.14; // 輕微變化音高，避免每次一模一樣
 
     const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.55, t);
-    gain.gain.exponentialRampToValueAtTime(0.0004, t + dur);
+    gain.gain.value = 0.85 + Math.random() * 0.25;
 
-    noise.connect(highpass).connect(gain).connect(audioCtx.destination);
-    noise.start(t);
-    noise.stop(t + dur + 0.002);
+    source.connect(gain).connect(audioCtx.destination);
+    source.start();
   } catch(e){ /* audio not available, fail silently */ }
 }
 
@@ -2755,6 +2791,172 @@ document.getElementById('trashBackdrop').addEventListener('click', e => {
     renderLibrary();
   }
 });
+
+/* ================= Google Drive sync ================= */
+const GOOGLE_CLIENT_ID = '360903377531-10ruh9tkpb35vbjbbgeto6ddivfou6b5.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILE_NAME = 'gaozhi-vault.json';
+
+let gTokenClient = null;
+let gAccessToken = null;
+let gTokenExpiresAt = 0;
+
+function setSyncStatus(connected, text){
+  const el = document.getElementById('syncStatus');
+  el.classList.toggle('connected', !!connected);
+  el.innerHTML = `<span class="dot"></span>${text}`;
+  document.getElementById('syncActions').style.display = connected ? 'flex' : 'none';
+  document.getElementById('googleSignInBtn').textContent = connected ? '重新連結 Google 帳號' : '連結 Google 帳號';
+}
+
+function initGoogleAuth(){
+  if(gTokenClient) return true;
+  if(!window.google || !window.google.accounts || !window.google.accounts.oauth2) return false;
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: () => {} // 個別請求時會覆寫這個 callback
+  });
+  return true;
+}
+
+function requestGoogleToken(promptMode){
+  return new Promise((resolve, reject) => {
+    if(!initGoogleAuth()){
+      reject(new Error('Google 服務尚未載入完成，請稍後再試一次'));
+      return;
+    }
+    gTokenClient.callback = (resp) => {
+      if(resp.error){ reject(resp); return; }
+      gAccessToken = resp.access_token;
+      gTokenExpiresAt = Date.now() + (resp.expires_in * 1000) - 60000;
+      resolve(gAccessToken);
+    };
+    gTokenClient.requestAccessToken({ prompt: promptMode !== undefined ? promptMode : '' });
+  });
+}
+
+async function ensureGoogleToken(){
+  if(gAccessToken && Date.now() < gTokenExpiresAt) return gAccessToken;
+  return requestGoogleToken('');
+}
+
+async function driveFindVaultFile(){
+  const token = await ensureGoogleToken();
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,modifiedTime)&spaces=drive`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if(!res.ok) throw new Error('Drive 查詢失敗（' + res.status + '）');
+  const data = await res.json();
+  return (data.files && data.files[0]) || null;
+}
+
+async function driveUploadVault(payloadObj){
+  const token = await ensureGoogleToken();
+  const existing = await driveFindVaultFile();
+  const boundary = 'gaozhi_boundary_' + Math.random().toString(36).slice(2);
+  const metaPart = existing ? {} : { name: DRIVE_FILE_NAME, mimeType: 'application/json' };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metaPart)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(payloadObj)}\r\n` +
+    `--${boundary}--`;
+  const url = existing
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+  const res = await fetch(url, {
+    method: existing ? 'PATCH' : 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body
+  });
+  if(!res.ok) throw new Error('Drive 上傳失敗（' + res.status + '）');
+  return res.json();
+}
+
+async function driveDownloadVault(){
+  const token = await ensureGoogleToken();
+  const existing = await driveFindVaultFile();
+  if(!existing) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${existing.id}?alt=media`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if(!res.ok) throw new Error('Drive 下載失敗（' + res.status + '）');
+  return { data: await res.json(), modifiedTime: existing.modifiedTime };
+}
+
+document.getElementById('googleSignInBtn').onclick = async () => {
+  const msg = document.getElementById('syncMsg');
+  msg.style.color = 'var(--ink-faint)';
+  msg.textContent = '連結中…';
+  try{
+    await requestGoogleToken('consent');
+    setSyncStatus(true, '已連結 Google 帳號');
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '連結成功';
+  } catch(err){
+    setSyncStatus(false, '尚未連結 Google 帳號');
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = (err && err.message) || 'Google 登入失敗，請再試一次';
+  }
+};
+
+document.getElementById('driveUploadBtn').onclick = async () => {
+  const msg = document.getElementById('syncMsg');
+  msg.style.color = 'var(--ink-faint)';
+  msg.textContent = '上傳中…';
+  try{
+    const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
+    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
+    await driveUploadVault(payload);
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '已上傳到 Google Drive';
+  } catch(err){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '上傳失敗：' + ((err && err.message) || '請再試一次');
+  }
+};
+
+document.getElementById('driveDownloadBtn').onclick = async () => {
+  const msg = document.getElementById('syncMsg');
+  msg.style.color = 'var(--ink-faint)';
+  msg.textContent = '下載中…';
+  try{
+    const result = await driveDownloadVault();
+    if(!result){
+      msg.style.color = 'var(--vermillion)';
+      msg.textContent = 'Drive 上還沒有備份檔，請先按「上傳」建立一份';
+      return;
+    }
+    if(!confirm('從 Drive 還原將覆蓋目前裝置上的所有內容，且無法復原（不計入撤銷紀錄），確定要繼續嗎？')) {
+      msg.textContent = '';
+      return;
+    }
+    const rec = result.data;
+    let loaded;
+    if(rec.salt === vaultSalt){
+      // 與本機使用同一組密碼衍生的金鑰，可直接解密
+      loaded = await CryptoVault.decryptJSON(vaultKey, rec.iv, rec.ciphertext);
+    } else {
+      const pw = window.prompt('這份 Drive 備份是用不同的金鑰加密的，請輸入該備份的密碼：');
+      if(pw === null){ msg.textContent = ''; return; }
+      const key = await CryptoVault.deriveKey(pw, rec.salt);
+      loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
+      // 往後本機也改用這組金鑰，讓本機與 Drive 的加密信封一致
+      vaultKey = key;
+      vaultSalt = rec.salt;
+    }
+    state = loaded;
+    normalizeSettings();
+    undoStack = []; redoStack = []; pendingSnapshot = null;
+    showLibrary();
+    schedulePersist();
+    msg.style.color = '#4C7A3E';
+    msg.textContent = '已從 Drive 還原';
+  } catch(err){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '下載失敗：' + ((err && err.message) || '密碼錯誤或網路問題，請再試一次');
+  }
+};
 
 boot();
 </script>
