@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gaozhi-cache-v3';
+const CACHE_NAME = 'gaozhi-cache-v4';
 const CORE_ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
@@ -47,7 +47,7 @@ self.addEventListener('fetch', event => {
 
   if(isAppShellRequest(req, url)){
     event.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'no-store' }).then(res => {
         const resClone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(req, resClone)).catch(() => {});
         return res;
