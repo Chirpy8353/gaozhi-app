@@ -954,6 +954,65 @@
   .book-open-btn:hover{ background:#413C33; }
   .book-del-btn{ background:transparent; border:1px solid var(--line); color:var(--ink-faint); flex:0 0 auto; width:34px; }
   .book-del-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+
+  /* ================= Mobile / narrow screen adaptation ================= */
+  #sidebarBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.32); z-index:55;
+  }
+  #sidebarBackdrop.show{ display:block; }
+
+  @media (max-width: 700px){
+    /* 側邊欄改為滑出式抽屜，不佔用畫面寬度 */
+    #sidebar, #sidebar.collapsed{
+      position:fixed; top:0; left:0; height:100vh; z-index:60;
+      width:250px !important; opacity:1 !important;
+      padding:20px 14px !important; border-right:1px solid var(--line) !important;
+      transform: translateX(-100%);
+      transition: transform .2s ease;
+    }
+    #sidebar.mobile-open{ transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.18); }
+
+    /* topbar 允許換行，章節標題改為彈性寬度 */
+    #topbar{ flex-wrap:wrap; gap:8px 10px; padding:10px 14px; }
+    #chapterTitle{ width:auto; flex:1 1 120px; font-size:16px; }
+    .col-headers{ display:none; }
+    #bookNameTag{ max-width:120px; order:3; }
+    #stats-strip{ flex-wrap:wrap; gap:8px 16px; padding:8px 14px; }
+    #rows{ padding:14px 14px 70px; }
+
+    /* 正文／備註改為上下堆疊，不再左右並排 */
+    .row{ grid-template-columns: 1fr; gap:6px; }
+    .row-gutter{ flex-direction:row; padding-top:0; gap:10px; margin-bottom:2px; }
+    .row-divider{ display:none; }
+    .thread{ display:none; }
+    .gutter-btns{ flex-direction:row; }
+
+    /* 觸控目標加大 */
+    .gbtn{ width:26px; height:22px; font-size:10px; }
+    .drag-handle{ font-size:16px; padding:4px; }
+
+    /* 書架版面縮減留白，卡片改為較窄的固定方塊 */
+    #library{ padding:24px 16px; }
+    .library-header{ flex-wrap:wrap; }
+    .library-header-actions{ width:100%; }
+    .lib-icon-btn{ flex:1; text-align:center; }
+    #libraryList{ grid-template-columns: repeat(auto-fill, 148px); grid-auto-rows:148px; }
+    .book-card{ width:148px; height:148px; padding:12px; }
+
+    /* 彈窗寬度限制在螢幕內，避免溢出 */
+    #settingsModal, #backupModal, #exportModal, #statsModal, #trashModal{
+      width:92vw !important; max-width:92vw; padding:16px;
+    }
+
+    /* 避免 iOS Safari 因輸入框字級過小而自動放大畫面 */
+    textarea[data-role], #chapterTitle, .gate-field input{ font-size:16px; }
+  }
+
+  @media (max-width: 420px){
+    .today-grid{ grid-template-columns: repeat(2, 1fr); }
+    #libraryList{ grid-template-columns: repeat(auto-fill, 130px); grid-auto-rows:130px; }
+    .book-card{ width:130px; height:130px; }
+  }
 </style>
 </head>
 <body>
@@ -1106,6 +1165,8 @@
     <button id="trashCloseBtn">關閉</button>
   </div>
 </div>
+
+<div id="sidebarBackdrop"></div>
 
 <div id="sidebar">
   <h1>稿 紙</h1>
@@ -2653,12 +2714,33 @@ document.getElementById('dailyGoalInput').addEventListener('change', e => {
   schedulePersist();
 });
 
+function isMobileViewport(){
+  return window.innerWidth <= 700;
+}
+
 document.getElementById('sidebarToggleBtn').onclick = () => {
-  normalizeSettings();
-  state.settings.sidebarCollapsed = !state.settings.sidebarCollapsed;
-  document.getElementById('sidebar').classList.toggle('collapsed', state.settings.sidebarCollapsed);
-  schedulePersist();
+  const sidebar = document.getElementById('sidebar');
+  if(isMobileViewport()){
+    sidebar.classList.toggle('mobile-open');
+    document.getElementById('sidebarBackdrop').classList.toggle('show');
+  } else {
+    normalizeSettings();
+    state.settings.sidebarCollapsed = !state.settings.sidebarCollapsed;
+    sidebar.classList.toggle('collapsed', state.settings.sidebarCollapsed);
+    schedulePersist();
+  }
 };
+
+function closeMobileSidebar(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
+document.getElementById('sidebarBackdrop').onclick = closeMobileSidebar;
+document.getElementById('sidebar').addEventListener('click', e => {
+  if(isMobileViewport() && (e.target.tagName === 'BUTTON' || e.target.closest('.chapter-item'))){
+    closeMobileSidebar();
+  }
+});
 
 let audioCtx = null;
 let keyClickBuffers = [];
