@@ -981,7 +981,7 @@
     #rows{ padding:14px 14px 70px; }
 
     /* 正文／備註改為上下堆疊，不再左右並排 */
-    .row{ grid-template-columns: 1fr; gap:6px; }
+    .row{ grid-template-columns: 1fr !important; gap:6px; }
     .row-gutter{ flex-direction:row; padding-top:0; gap:10px; margin-bottom:2px; }
     .row-divider{ display:none; }
     .thread{ display:none; }
@@ -991,13 +991,17 @@
     .gbtn{ width:26px; height:22px; font-size:10px; }
     .drag-handle{ font-size:16px; padding:4px; }
 
-    /* 書架版面縮減留白，卡片改為較窄的固定方塊 */
+    /* 書架版面縮減留白，卡片改為與「新增文章」按鈕等寬、彈性排列 */
     #library{ padding:24px 16px; }
     .library-header{ flex-wrap:wrap; }
     .library-header-actions{ width:100%; }
     .lib-icon-btn{ flex:1; text-align:center; }
-    #libraryList{ grid-template-columns: repeat(auto-fill, 148px); grid-auto-rows:148px; }
-    .book-card{ width:148px; height:148px; padding:12px; }
+    #libraryList{
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-auto-rows: 150px;
+      gap:12px;
+    }
+    .book-card{ width:100%; height:100%; padding:12px; }
 
     /* 彈窗寬度限制在螢幕內，避免溢出 */
     #settingsModal, #backupModal, #exportModal, #statsModal, #trashModal{
@@ -1010,8 +1014,11 @@
 
   @media (max-width: 420px){
     .today-grid{ grid-template-columns: repeat(2, 1fr); }
-    #libraryList{ grid-template-columns: repeat(auto-fill, 130px); grid-auto-rows:130px; }
-    .book-card{ width:130px; height:130px; }
+    #libraryList{
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-auto-rows: 130px;
+    }
+    .book-card{ width:100%; height:100%; }
   }
 </style>
 </head>
