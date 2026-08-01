@@ -1030,13 +1030,16 @@
     .gbtn{ width:26px; height:22px; font-size:10px; }
     .drag-handle{ font-size:16px; padding:4px; }
 
-    /* 書架版面縮減留白，卡片改為與「新增文章」按鈕等寬、彈性排列 */
+    /* 書架版面縮減留白，卡片改為與「新增文章」按鈕等寬。
+       門檻拉高到 240px 是刻意的：一般手機直向寬度（~360-430px）扣掉留白後
+       只夠放下一欄，才會確實跟按鈕一樣滿版；螢幕夠寬（例如平板、手機橫向）
+       才會自然排出兩欄以上。 */
     #library{ padding:24px 16px; }
     .library-header{ flex-wrap:wrap; }
     .library-header-actions{ width:100%; }
     .lib-icon-btn{ flex:1; text-align:center; }
     #libraryList{
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap:12px;
       align-items:start;
     }
@@ -1053,10 +1056,7 @@
 
   @media (max-width: 420px){
     .today-grid{ grid-template-columns: repeat(2, 1fr); }
-    #libraryList{
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    }
-    .book-card{ width:100%; height:auto; min-height:130px; }
+    .book-card{ min-height:130px; }
   }
 </style>
 </head>
@@ -2944,10 +2944,19 @@ document.addEventListener('keydown', e => {
   playKeySound();
 });
 
+// Service Worker 快取這幾輪一直是問題的根源（手機又沒有方便的手動清除入口），
+// 這裡先整個停用：不再註冊新的，並且主動清掉任何殘留的舊註冊與快取，
+// 讓頁面回到最單純、每次都直接跟網路要最新版本的狀態。等穩定下來、
+// 你確認不再有「看到舊版本」的狀況，之後可以再考慮重新加回離線／安裝功能。
 if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  }).catch(() => {});
+}
+if(window.caches && caches.keys){
+  caches.keys().then(names => {
+    names.forEach(name => caches.delete(name));
+  }).catch(() => {});
 }
 
 document.getElementById('openStatsBtn').onclick = () => {
