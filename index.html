@@ -959,14 +959,15 @@
   #libraryList{
     display:grid;
     grid-template-columns: repeat(auto-fill, 200px);
-    grid-auto-rows: 200px;
+    grid-auto-rows: min-content;
     justify-content:start;
+    align-items:start;
     gap:16px;
   }
   .book-card{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
     padding:16px; display:flex; flex-direction:column; transition:border-color .12s;
-    width:200px; height:200px; box-sizing:border-box; overflow:hidden;
+    width:200px; height:auto; min-height:200px; box-sizing:border-box; overflow:hidden;
   }
   .book-card:hover{ border-color:var(--vermillion-soft); }
   .book-card-main{ flex:1; min-width:0; }
@@ -1455,11 +1456,12 @@ function currentBook(){
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 
 function normalizeSettings(){
-  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 };
+  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
+  if(typeof state.settings.googleConnected !== 'boolean') state.settings.googleConnected = false;
   if(!state.dailyLog) state.dailyLog = {};
   if(!state.trash) state.trash = [];
 }
@@ -2836,6 +2838,7 @@ function openSettingsModal(){
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   document.getElementById('settingsBackdrop').style.display = 'flex';
+  trySilentGoogleReconnect();
 }
 document.getElementById('settingsBtn').onclick = openSettingsModal;
 document.getElementById('librarySettingsBtn').onclick = openSettingsModal;
@@ -3115,12 +3118,33 @@ async function driveDownloadVault(){
   return { data: await res.json(), modifiedTime: existing.modifiedTime };
 }
 
+async function trySilentGoogleReconnect(){
+  if(!state.settings.googleConnected) return;
+  if(gAccessToken && Date.now() < gTokenExpiresAt){
+    setSyncStatus(true, '已連結 Google 帳號');
+    return;
+  }
+  const msg = document.getElementById('syncMsg');
+  setSyncStatus(false, '重新連結中…');
+  msg.textContent = '';
+  try{
+    await requestGoogleToken('');
+    setSyncStatus(true, '已連結 Google 帳號');
+  } catch(err){
+    setSyncStatus(false, '尚未連結 Google 帳號');
+    msg.style.color = 'var(--ink-faint)';
+    msg.textContent = '自動重新連結未成功，需要時請手動點「連結 Google 帳號」';
+  }
+}
+
 document.getElementById('googleSignInBtn').onclick = async () => {
   const msg = document.getElementById('syncMsg');
   msg.style.color = 'var(--ink-faint)';
   msg.textContent = '連結中…';
   try{
     await requestGoogleToken('consent');
+    state.settings.googleConnected = true;
+    schedulePersist();
     setSyncStatus(true, '已連結 Google 帳號');
     msg.style.color = '#4C7A3E';
     msg.textContent = '連結成功';

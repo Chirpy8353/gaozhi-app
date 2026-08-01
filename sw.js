@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gaozhi-cache-v4';
+const CACHE_NAME = 'gaozhi-cache-v5';
 const CORE_ASSETS = [
   './manifest.webmanifest',
   './icons/icon-192.png',
@@ -31,10 +31,9 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// index.html (and navigation requests) use network-first: always try to fetch the
-// latest version first, and only fall back to the cached copy when offline. This is
-// what makes future updates show up immediately instead of getting stuck on an old
-// cached version.
+// index.html（以及導覽請求）完全不快取，純粹直接向網路要最新版本。
+// 這犧牲了「離線時能看到殼」的能力，換取「更新永遠不會卡在舊版本」——
+// 手機瀏覽器沒有方便的手動清快取入口，這個風險換算下來不值得冒。
 function isAppShellRequest(req, url){
   return req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html');
 }
@@ -46,17 +45,12 @@ self.addEventListener('fetch', event => {
   if(url.origin !== self.location.origin) return;
 
   if(isAppShellRequest(req, url)){
-    event.respondWith(
-      fetch(req, { cache: 'no-store' }).then(res => {
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(req, resClone)).catch(() => {});
-        return res;
-      }).catch(() => caches.match(req).then(cached => cached || caches.match('./index.html')))
-    );
+    event.respondWith(fetch(req, { cache: 'no-store' }));
     return;
   }
 
-  // Static assets (icons, manifest): cache-first is fine since they rarely change.
+  // 靜態資源（圖示、音效、manifest）變動機率低，用 cache-first 沒問題，
+  // 也讓離線時至少這些小檔案還能用。
   event.respondWith(
     caches.match(req).then(cached => {
       if(cached) return cached;
