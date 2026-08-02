@@ -1432,7 +1432,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-01 15:40';
+const APP_BUILD = '2026-08-02 11:20';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2867,7 +2867,8 @@ function openSettingsModal(){
   if(state.settings.keySound){
     if(keyClickBuffers.length > 0){
       msg.style.color = '#4C7A3E';
-      msg.textContent = `音效已就緒（${keyClickBuffers.length}/10 個檔案）`;
+      msg.textContent = `音效已就緒（${keyClickBuffers.length}/10 個檔案）｜播放器目前狀態：${audioCtx ? audioCtx.state : '尚未建立'}`;
+      if(lastPlayAttemptInfo) msg.textContent += ' ｜ ' + lastPlayAttemptInfo;
     } else {
       msg.style.color = 'var(--vermillion)';
       msg.textContent = '音效檔案尚未成功載入，請確認 sounds/ 資料夾已正確上傳，或關閉後重新開啟這個開關重試';
@@ -2894,13 +2895,23 @@ document.getElementById('toggleKeySound').addEventListener('change', async e => 
   schedulePersist();
   const msg = document.getElementById('keySoundMsg');
   if(!e.target.checked){ msg.textContent = ''; return; }
+
+  // 先在「使用者剛點擊」這個當下同步嘗試建立並解鎖 AudioContext，
+  // 不要等音效檔案載入完（那是非同步、會花時間）才去解鎖——
+  // 有些瀏覽器的自動播放限制只認「解鎖動作是不是緊跟著使用者手勢」，
+  // 中間隔了一段網路請求時間，解鎖可能就失敗了。
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const stateBefore = audioCtx.state;
+  try{ await audioCtx.resume(); } catch(err){ /* 忽略，狀態會反映在下面診斷訊息裡 */ }
+  const stateAfterResume = audioCtx.state;
+
   msg.style.color = 'var(--ink-faint)';
   msg.textContent = '正在載入音效檔案…';
   const result = await loadKeyClickBuffers();
   if(result.ok){
-    msg.style.color = '#4C7A3E';
-    msg.textContent = `音效已就緒（成功載入 ${result.loaded}/10 個檔案）`;
     playKeySound();
+    msg.style.color = '#4C7A3E';
+    msg.textContent = `音效已就緒（${result.loaded}/10）｜播放器狀態：${audioCtx.state}（解鎖前 ${stateBefore} → 解鎖後 ${stateAfterResume}）`;
   } else {
     msg.style.color = 'var(--vermillion)';
     msg.textContent = '音效檔案載入失敗，請確認 sounds/ 資料夾已正確上傳到你的網站';
@@ -2975,11 +2986,18 @@ async function loadKeyClickBuffers(){
   return { ok: keyClickBuffers.length > 0, loaded: keyClickBuffers.length, failed: failedFiles };
 }
 
+let lastPlayAttemptInfo = '';
+
 function playKeySound(){
   try{
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const stateBefore = audioCtx.state;
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    if(keyClickBuffers.length === 0){ loadKeyClickBuffers(); return; }
+    if(keyClickBuffers.length === 0){
+      lastPlayAttemptInfo = `上次嘗試播放時：緩衝區是空的（尚未載入完成），狀態 ${stateBefore}`;
+      loadKeyClickBuffers();
+      return;
+    }
 
     const buffer = keyClickBuffers[Math.floor(Math.random() * keyClickBuffers.length)];
     const source = audioCtx.createBufferSource();
@@ -2991,15 +3009,19 @@ function playKeySound(){
 
     source.connect(gain).connect(audioCtx.destination);
     source.start();
-  } catch(e){ /* audio not available, fail silently */ }
+    lastPlayAttemptInfo = `上次嘗試播放：${new Date().toLocaleTimeString()}，狀態 ${stateBefore} → ${audioCtx.state}`;
+  } catch(e){
+    lastPlayAttemptInfo = '上次嘗試播放時發生錯誤：' + (e.message || e);
+  }
 }
 
-document.addEventListener('keydown', e => {
+// 用 input 事件而非 keydown 來觸發音效：keydown 在手機虛擬鍵盤上很不可靠
+// （很多輸入法只會觸發 input，不會觸發正常的 keydown），但 input 事件在
+// 桌面實體鍵盤和手機虛擬鍵盤上都能穩定觸發，兩邊都能聽到聲音。
+document.addEventListener('input', e => {
   if(!state || !state.settings || !state.settings.keySound) return;
   const tag = e.target.tagName;
   if(tag !== 'TEXTAREA' && tag !== 'INPUT') return;
-  if(e.ctrlKey || e.metaKey || e.altKey) return;
-  if(['Shift','Control','Alt','Meta','CapsLock','Tab','Escape'].includes(e.key)) return;
   playKeySound();
 });
 
