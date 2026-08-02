@@ -673,6 +673,14 @@
   #gate-loading{ text-align:center; color:var(--ink-faint); font-size:13px; }
   .gate-import-panel{ display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line); }
   .gate-import-panel.open{ display:block; }
+  #gateVersionTag{
+    text-align:center; margin-top:14px; font-size:10px; color:var(--ink-faint); opacity:0.6;
+    font-variant-numeric:tabular-nums;
+  }
+  #appVersionTag{
+    text-align:center; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line-soft);
+    font-size:10px; color:var(--ink-faint); opacity:0.6; font-variant-numeric:tabular-nums;
+  }
 
   /* ---------- Backup modal ---------- */
   #backupBackdrop{
@@ -1124,6 +1132,7 @@
       <div class="gate-switch">忘記密碼將無法救回本機資料；若其他裝置上有備份檔，可清除本機資料後重新匯入。</div>
     </div>
 
+    <div id="gateVersionTag"></div>
   </div>
 </div>
 
@@ -1398,6 +1407,7 @@
         <span class="switch-track"></span>
       </label>
     </div>
+    <div class="backup-msg" id="keySoundMsg" style="margin-top:-6px; margin-bottom:10px;"></div>
     <div class="setting-row">
       <span>每日字數目標<small>用於「今日概覽」的完成度計算</small></span>
       <input type="number" id="dailyGoalInput" min="1" step="100" style="width:80px; padding:6px 8px; font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); color:var(--ink); text-align:right;" />
@@ -1414,11 +1424,19 @@
       <div class="backup-msg" id="syncMsg"></div>
     </div>
 
+    <div id="appVersionTag"></div>
     <button id="settingsCloseBtn">關閉</button>
   </div>
 </div>
 
 <script>
+// 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
+// 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
+const APP_BUILD = '2026-08-01 15:40';
+document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
+  el.textContent = '版本 ' + APP_BUILD;
+});
+
 let idSeed = 1;
 const newId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + (idSeed++);
 
@@ -2845,6 +2863,18 @@ function openSettingsModal(){
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   document.getElementById('settingsBackdrop').style.display = 'flex';
   trySilentGoogleReconnect();
+  const msg = document.getElementById('keySoundMsg');
+  if(state.settings.keySound){
+    if(keyClickBuffers.length > 0){
+      msg.style.color = '#4C7A3E';
+      msg.textContent = `音效已就緒（${keyClickBuffers.length}/10 個檔案）`;
+    } else {
+      msg.style.color = 'var(--vermillion)';
+      msg.textContent = '音效檔案尚未成功載入，請確認 sounds/ 資料夾已正確上傳，或關閉後重新開啟這個開關重試';
+    }
+  } else {
+    msg.textContent = '';
+  }
 }
 document.getElementById('settingsBtn').onclick = openSettingsModal;
 document.getElementById('librarySettingsBtn').onclick = openSettingsModal;
@@ -2858,11 +2888,24 @@ document.getElementById('toggleGridBg').addEventListener('change', e => {
   document.getElementById('rows').classList.toggle('grid-mode', e.target.checked);
   schedulePersist();
 });
-document.getElementById('toggleKeySound').addEventListener('change', e => {
+document.getElementById('toggleKeySound').addEventListener('change', async e => {
   normalizeSettings();
   state.settings.keySound = e.target.checked;
   schedulePersist();
-  if(e.target.checked) playKeySound();
+  const msg = document.getElementById('keySoundMsg');
+  if(!e.target.checked){ msg.textContent = ''; return; }
+  msg.style.color = 'var(--ink-faint)';
+  msg.textContent = '正在載入音效檔案…';
+  const result = await loadKeyClickBuffers();
+  if(result.ok){
+    msg.style.color = '#4C7A3E';
+    msg.textContent = `音效已就緒（成功載入 ${result.loaded}/10 個檔案）`;
+    playKeySound();
+  } else {
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '音效檔案載入失敗，請確認 sounds/ 資料夾已正確上傳到你的網站';
+    console.warn('鍵盤音效載入失敗清單：', result.failed);
+  }
 });
 document.getElementById('dailyGoalInput').addEventListener('change', e => {
   normalizeSettings();
@@ -2905,21 +2948,31 @@ let keyClickBuffers = [];
 let keyClickBuffersLoading = false;
 
 async function loadKeyClickBuffers(){
-  if(keyClickBuffersLoading || keyClickBuffers.length > 0) return;
+  if(keyClickBuffers.length > 0) return { ok: true, loaded: keyClickBuffers.length, failed: [] };
+  if(keyClickBuffersLoading){
+    // 已經有另一次載入在進行中，稍等它跑完再回報結果
+    while(keyClickBuffersLoading) await new Promise(r => setTimeout(r, 50));
+    return { ok: keyClickBuffers.length > 0, loaded: keyClickBuffers.length, failed: [] };
+  }
   keyClickBuffersLoading = true;
+  const failedFiles = [];
   try{
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const files = Array.from({ length: 10 }, (_, i) => `sounds/click${i + 1}.mp3`);
     const buffers = await Promise.all(files.map(async url => {
       try{
         const res = await fetch(url);
+        if(!res.ok){ failedFiles.push(`${url}（HTTP ${res.status}）`); return null; }
         const arr = await res.arrayBuffer();
         return await audioCtx.decodeAudioData(arr);
-      } catch(e){ return null; }
+      } catch(e){ failedFiles.push(`${url}（${e.message || '讀取失敗'}）`); return null; }
     }));
     keyClickBuffers = buffers.filter(Boolean);
-  } catch(e){ /* ignore, will just have no sound */ }
+  } catch(e){
+    failedFiles.push('AudioContext 初始化失敗：' + (e.message || e));
+  }
   keyClickBuffersLoading = false;
+  return { ok: keyClickBuffers.length > 0, loaded: keyClickBuffers.length, failed: failedFiles };
 }
 
 function playKeySound(){
