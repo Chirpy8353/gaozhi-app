@@ -100,6 +100,14 @@
     color: var(--ink-faint);
     font-variant-numeric: tabular-nums;
   }
+  .chapter-item.dragging{ opacity:0.35; }
+  .chapter-item.drag-over-top{ box-shadow: inset 0 2px 0 var(--vermillion); }
+  .chapter-item.drag-over-bottom{ box-shadow: inset 0 -2px 0 var(--vermillion); }
+  .chapter-drag-handle{
+    cursor:grab; color:var(--ink-faint); font-size:12px; flex-shrink:0; opacity:0; transition:opacity .12s;
+  }
+  .chapter-item:hover .chapter-drag-handle{ opacity:1; }
+  .chapter-item-title{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #addChapterBtn{
     margin-top:10px;
     border: 1px dashed var(--line);
@@ -274,6 +282,35 @@
     background: var(--paper);
   }
   #stats-strip b{ color: var(--ink); font-weight:600; }
+  .chapter-target{ display:flex; align-items:center; gap:6px; margin-left:auto; }
+  .chapter-target input{
+    width:52px; font-family:inherit; font-size:11.5px; color:var(--ink);
+    border:1px solid var(--line); border-radius:3px; background:var(--white);
+    padding:2px 5px; text-align:right;
+  }
+  .ct-bar-track{
+    width:70px; height:6px; background:var(--line-soft); border-radius:3px; overflow:hidden; display:inline-block;
+  }
+  .ct-bar-fill{
+    display:block; height:100%; background:linear-gradient(90deg, var(--vermillion-soft), var(--vermillion));
+    border-radius:3px; width:0%; transition:width .2s ease;
+  }
+  .ct-bar-fill.met{ background:linear-gradient(90deg, #8FBF7F, #4C7A3E); }
+
+  #punctBar{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    padding:7px 28px; border-bottom:1px solid var(--line-soft);
+    background: var(--paper); flex-shrink:0;
+  }
+  .punct-btn{
+    font-family:"Noto Serif SC", serif; font-size:13px; color:var(--ink-soft);
+    background:var(--white); border:1px solid var(--line); border-radius:4px;
+    padding:4px 10px; cursor:pointer; line-height:1.4;
+  }
+  .punct-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .punct-sep{ width:1px; height:16px; background:var(--line); margin:0 4px; }
+  .punct-scene{ font-family:"Noto Sans SC", sans-serif; font-size:11.5px; color:var(--vermillion); border-color:#E4C3B6; background:var(--vermillion-bg); }
+  .punct-scene:hover{ background:#EED3C8; }
 
   #rows{
     flex:1;
@@ -292,6 +329,7 @@
     border-radius: var(--radius);
   }
   .row.dragging{ opacity:0.35; }
+  .row.search-highlight{ box-shadow: 0 0 0 2px var(--vermillion); border-radius:var(--radius); transition: box-shadow .3s ease; }
   .row.drag-over-top{ box-shadow: inset 0 2px 0 var(--vermillion); }
   .row.drag-over-bottom{ box-shadow: inset 0 -2px 0 var(--vermillion); }
 
@@ -463,32 +501,31 @@
   table.ov-table td.num{ text-align:right; font-variant-numeric:tabular-nums; }
   table.ov-table tr.total td{ font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; }
 
-  .chart-block h3{
-    font-size:13px; color:var(--ink-soft); font-weight:600; margin:0 0 4px;
-  }
-  .chart-note{ font-size:11px; color:var(--ink-faint); margin-bottom:14px; }
-  .bars{
-    display:flex; align-items:flex-end; gap:10px; height:140px;
-    padding: 0 4px 24px; border-bottom:1px solid var(--line);
-    position:relative;
-  }
-  .bar{
-    flex:1;
-    background: linear-gradient(180deg, var(--vermillion-soft), var(--vermillion));
-    border-radius: 2px 2px 0 0;
-    position:relative;
-    min-width:8px;
-  }
-  .bar span{
-    position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);
-    font-size:10px; color:var(--ink-faint); white-space:nowrap;
-  }
-
-  #closeOverview, #closeForeshadow{
+  #closeOverview, #closeForeshadow, #closeOutline{
     background:transparent; border:1px solid var(--line); color:var(--ink-soft);
     padding:6px 12px; border-radius:var(--radius); font-size:12px; cursor:pointer;
     font-family:inherit; margin-bottom:18px;
   }
+
+  /* ---------- Outline overview ---------- */
+  #outline{ display:none; padding: 26px 32px; overflow-y:auto; }
+  #outline h2{ font-family:"Noto Serif SC", serif; font-size:19px; margin:0 0 4px; }
+  #outline .ov-sub{ color:var(--ink-faint); font-size:12px; margin-bottom:22px; }
+  .outline-chapter{ margin-bottom:24px; }
+  .outline-chapter-title{
+    font-family:"Noto Serif SC", serif; font-size:14.5px; font-weight:600; color:var(--ink);
+    padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid var(--line-soft);
+  }
+  .outline-empty{ font-size:12px; color:var(--ink-faint); padding-left:4px; }
+  .outline-item{
+    display:flex; gap:12px; margin-bottom:12px; padding-left:2px;
+  }
+  .outline-seal{
+    flex-shrink:0; width:20px; height:20px; border:1.3px solid var(--vermillion-soft); color:var(--vermillion);
+    border-radius:4px; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:600; font-family:"Noto Serif SC", serif; margin-top:1px;
+  }
+  .outline-note{ font-size:13px; color:var(--ink); line-height:1.7; padding-top:1px; }
 
   /* ---------- Foreshadow ---------- */
   #foreshadow{ display:none; padding: 26px 32px; overflow-y:auto; }
@@ -894,6 +931,54 @@
   }
 
   /* ---------- Book info modal ---------- */
+  /* ---------- Search ---------- */
+  #searchBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:53; align-items:flex-start; justify-content:center; padding-top:10vh;
+  }
+  #searchModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:480px; max-width:92vw; max-height:75vh; overflow-y:auto; padding:22px;
+  }
+  #searchModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 12px; }
+  #searchInput{
+    width:100%; box-sizing:border-box; font-family:inherit; font-size:14px; padding:9px 12px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    margin-bottom:14px;
+  }
+  .search-result{
+    padding:10px 12px; border:1px solid var(--line-soft); border-radius:var(--radius);
+    margin-bottom:8px; cursor:pointer; background:var(--white);
+  }
+  .search-result:hover{ border-color:var(--vermillion-soft); }
+  .search-result-meta{ font-size:10.5px; color:var(--ink-faint); margin-bottom:4px; }
+  .search-result-snippet{ font-size:13px; color:var(--ink); line-height:1.6; }
+  .search-result-snippet mark{ background:var(--vermillion-bg); color:var(--vermillion); font-weight:600; border-radius:2px; }
+  #searchCloseBtn{
+    width:100%; margin-top:6px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
+
+  /* ---------- Word check ---------- */
+  #wordCheckBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:53; align-items:flex-start; justify-content:center; padding-top:10vh;
+  }
+  #wordCheckModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:480px; max-width:92vw; max-height:75vh; overflow-y:auto; padding:22px;
+  }
+  #wordCheckModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 4px; }
+  #wordCheckModal .ov-sub{ color:var(--ink-faint); font-size:11.5px; margin-bottom:16px; }
+  .wc-hit-word{
+    display:inline-block; font-size:11px; color:var(--vermillion); background:var(--vermillion-bg);
+    border:1px solid #E4C3B6; border-radius:10px; padding:2px 9px; margin-bottom:6px;
+  }
+  #wordCheckCloseBtn{
+    width:100%; margin-top:6px; padding:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  }
+
   #bookInfoBackdrop{
     display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
     z-index:52; align-items:center; justify-content:center;
@@ -1031,6 +1116,7 @@
     .col-headers{ display:none; }
     #bookNameTag{ max-width:120px; order:3; }
     #stats-strip{ flex-wrap:wrap; gap:8px 16px; padding:8px 14px; }
+    #punctBar{ padding:7px 14px; overflow-x:auto; flex-wrap:nowrap; }
     #rows{ padding:14px 14px 70px; }
 
     /* 正文／備註改為上下堆疊，不再左右並排 */
@@ -1227,6 +1313,24 @@
   </div>
 </div>
 
+<div id="wordCheckBackdrop">
+  <div id="wordCheckModal">
+    <h3>敏感詞檢查</h3>
+    <div class="ov-sub" id="wordCheckSub">掃描全書正文，比對你在設定裡維護的敏感詞庫</div>
+    <div id="wordCheckResults"></div>
+    <button id="wordCheckCloseBtn">關閉</button>
+  </div>
+</div>
+
+<div id="searchBackdrop">
+  <div id="searchModal">
+    <h3>搜尋</h3>
+    <input type="text" id="searchInput" placeholder="搜尋本書的正文與備註…" />
+    <div id="searchResults"></div>
+    <button id="searchCloseBtn">關閉</button>
+  </div>
+</div>
+
 <div id="bookInfoBackdrop">
   <div id="bookInfoModal">
     <h3>書籍資訊</h3>
@@ -1274,6 +1378,9 @@
   <button id="backupBtn" class="nav-btn">🔒 備份與還原</button>
   <button id="lockBtn" class="nav-btn">🔐 鎖定</button>
   <button id="settingsBtn" class="nav-btn">⚙ 設定</button>
+  <button id="searchBtn" class="nav-btn">🔍 搜尋</button>
+  <button id="wordCheckBtn" class="nav-btn">⚠ 敏感詞檢查</button>
+  <button id="outlineBtn" class="nav-btn">📝 大綱總覽</button>
   <button id="overviewBtn">📖 全書總覽</button>
 </div>
 
@@ -1300,19 +1407,39 @@
     <span>本章字數 <b id="chapterWordCount">0</b></span>
     <span>本章節數 <b id="chapterSectionCount">0</b></span>
     <span>全書字數 <b id="bookWordCount">0</b></span>
+    <span class="chapter-target">
+      本章目標 <input type="number" id="chapterTargetInput" min="0" step="100" />
+      字
+      <span class="ct-bar-track"><span class="ct-bar-fill" id="chapterTargetFill"></span></span>
+      <b id="chapterTargetPct">0%</b>
+    </span>
+  </div>
+  <div id="punctBar">
+    <button class="punct-btn" data-open="「" data-close="」">「」</button>
+    <button class="punct-btn" data-open="『" data-close="』">『』</button>
+    <button class="punct-btn" data-open="（" data-close="）">（）</button>
+    <button class="punct-btn" data-open="《" data-close="》">《》</button>
+    <button class="punct-btn" data-open="……" data-close="">……</button>
+    <button class="punct-btn" data-open="——" data-close="">——</button>
+    <button class="punct-btn" data-open="、" data-close="">、</button>
+    <button class="punct-btn" data-open="～" data-close="">～</button>
+    <span class="punct-sep"></span>
+    <button class="punct-btn punct-scene" id="sceneBreakBtn">◇ 場景分隔</button>
   </div>
   <div id="rows"></div>
 
   <div id="overview">
     <button id="closeOverview">← 返回寫作</button>
     <h2>全書總覽</h2>
-    <div class="ov-sub">此為原型示範，實際版本將接入堅果雲同步與每日寫作記錄</div>
+    <div class="ov-sub">本書各章節的字數統計</div>
     <table class="ov-table" id="ovTable"></table>
-    <div class="chart-block">
-      <h3>每日字數趨勢</h3>
-      <div class="chart-note">示範數據 · 實際版本將依真實寫作記錄統計</div>
-      <div class="bars" id="bars"></div>
-    </div>
+  </div>
+
+  <div id="outline">
+    <button id="closeOutline">← 返回寫作</button>
+    <h2>大綱總覽</h2>
+    <div class="ov-sub">把全書各章節的備註串成一條時間線，方便檢查劇情節奏與伏筆</div>
+    <div id="outlineList"></div>
   </div>
 
   <div id="foreshadow">
@@ -1414,6 +1541,19 @@
     </div>
 
     <div class="sync-section">
+      <h4>⚠ 敏感詞庫</h4>
+      <p style="font-size:11px; color:var(--ink-faint); margin:0 0 8px; line-height:1.6;">
+        每行一個詞。這份清單完全由你自己維護——不同平台的規則不一樣、也會隨時間變動，
+        我們不會幫你預填，你可以貼上投稿平台公告的違禁詞規則。
+      </p>
+      <textarea id="sensitiveWordsInput" rows="5" placeholder="例如：
+賭博
+詐騙" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:12.5px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink); resize:vertical; margin-bottom:8px;"></textarea>
+      <button class="backup-btn" id="saveSensitiveWordsBtn">儲存詞庫</button>
+      <div class="backup-msg" id="sensitiveWordsMsg"></div>
+    </div>
+
+    <div class="sync-section">
       <h4>☁ 雲端同步（Google Drive）</h4>
       <div class="sync-status" id="syncStatus">尚未連結 Google 帳號</div>
       <button class="backup-btn" id="googleSignInBtn">連結 Google 帳號</button>
@@ -1432,7 +1572,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-02 12:05';
+const APP_BUILD = '2026-08-04 10:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -1465,7 +1605,7 @@ function freshBook(title){
     currentChapterId: chapterId,
     wordMode: 'auto',
     chapters: [
-      { id: chapterId, title: '第一章', sections: [ { id: newId(), text: '', note: '' } ] }
+      { id: chapterId, title: '第一章', targetWords: 2500, sections: [ { id: newId(), text: '', note: '' } ] }
     ],
     foreshadows: [],
     characters: [],
@@ -1480,12 +1620,13 @@ function currentBook(){
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 
 function normalizeSettings(){
-  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false };
+  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, sensitiveWords: [] };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
   if(typeof state.settings.googleConnected !== 'boolean') state.settings.googleConnected = false;
+  if(!Array.isArray(state.settings.sensitiveWords)) state.settings.sensitiveWords = [];
   if(!state.dailyLog) state.dailyLog = {};
   if(!state.trash) state.trash = [];
 }
@@ -1649,10 +1790,49 @@ function renderSidebar(){
     const total = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
     const li = document.createElement('li');
     li.className = 'chapter-item' + (ch.id === currentBook().currentChapterId ? ' active' : '');
-    li.innerHTML = `<span>${escapeHtml(ch.title || '未命名章節')}</span><span class="cnt">${total}</span>`;
-    li.onclick = () => { currentBook().currentChapterId = ch.id; renderAll(); };
+    li.draggable = true;
+    li.dataset.chapterId = ch.id;
+    li.innerHTML = `<span class="chapter-drag-handle">⠿</span><span class="chapter-item-title">${escapeHtml(ch.title || '未命名章節')}</span><span class="cnt">${total}</span>`;
+    li.onclick = (e) => {
+      if(e.target.classList.contains('chapter-drag-handle')) return;
+      currentBook().currentChapterId = ch.id; renderAll();
+    };
+    li.addEventListener('dragstart', e => {
+      li.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', ch.id);
+    });
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      const rect = li.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      li.classList.toggle('drag-over-top', e.clientY < mid);
+      li.classList.toggle('drag-over-bottom', e.clientY >= mid);
+    });
+    li.addEventListener('dragleave', () => li.classList.remove('drag-over-top', 'drag-over-bottom'));
+    li.addEventListener('drop', e => {
+      e.preventDefault();
+      li.classList.remove('drag-over-top', 'drag-over-bottom');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if(draggedId === ch.id) return;
+      const rect = li.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      reorderChapter(draggedId, ch.id, before);
+    });
     list.appendChild(li);
   });
+}
+
+function reorderChapter(draggedId, targetId, before){
+  withHistory(() => {
+    const chapters = currentBook().chapters;
+    const fromIdx = chapters.findIndex(c => c.id === draggedId);
+    const item = chapters.splice(fromIdx, 1)[0];
+    let toIdx = chapters.findIndex(c => c.id === targetId);
+    if(!before) toIdx += 1;
+    chapters.splice(toIdx, 0, item);
+  });
+  renderSidebar();
 }
 
 function autoResize(ta){
@@ -1770,12 +1950,28 @@ function renderRows(){
 
 function updateStrip(){
   const ch = currentChapter();
-  document.getElementById('chapterWordCount').textContent =
-    ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
+  const chWords = ch.sections.reduce((s, sec) => s + wordCount(sec.text), 0);
+  document.getElementById('chapterWordCount').textContent = chWords;
   document.getElementById('chapterSectionCount').textContent = ch.sections.length;
   document.getElementById('bookWordCount').textContent =
     currentBook().chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text), 0), 0);
+
+  if(typeof ch.targetWords !== 'number' || ch.targetWords < 0) ch.targetWords = 2500;
+  const targetInput = document.getElementById('chapterTargetInput');
+  if(document.activeElement !== targetInput) targetInput.value = ch.targetWords;
+  const pct = ch.targetWords > 0 ? Math.min(100, Math.round((chWords / ch.targetWords) * 100)) : 0;
+  document.getElementById('chapterTargetPct').textContent = pct + '%';
+  const fill = document.getElementById('chapterTargetFill');
+  fill.style.width = pct + '%';
+  fill.classList.toggle('met', pct >= 100);
 }
+
+document.getElementById('chapterTargetInput').addEventListener('change', e => {
+  const v = parseInt(e.target.value, 10);
+  const ch = currentChapter();
+  withHistory(() => { ch.targetWords = (v >= 0) ? v : 2500; });
+  updateStrip();
+});
 
 function flashAutosave(){
   schedulePersist();
@@ -1851,16 +2047,31 @@ function renderOverview(){
     ${rows}
     <tr class="total"><td>總計</td><td class="num">${currentBook().chapters.reduce((s,c)=>s+c.sections.length,0)}</td><td class="num">${total}</td></tr>
   `;
+}
 
-  const bars = document.getElementById('bars');
-  const demo = [320, 850, 0, 1200, 640, 980, 410];
-  const days = ['一','二','三','四','五','六','日'];
-  const max = Math.max(...demo, 1);
-  bars.innerHTML = demo.map((v,i) => `
-    <div class="bar" style="height:${(v/max*100)}%">
-      <span>${days[i]}</span>
-    </div>
-  `).join('');
+function renderOutline(){
+  const list = document.getElementById('outlineList');
+  const chapters = currentBook().chapters;
+  if(chapters.every(ch => ch.sections.every(sec => !sec.note.trim()))){
+    list.innerHTML = '<div class="lib-empty">還沒有任何備註，在正文右側寫下大綱後會顯示在這裡</div>';
+    return;
+  }
+  list.innerHTML = chapters.map((ch, ci) => {
+    const notedSections = ch.sections
+      .map((sec, si) => ({ sec, si }))
+      .filter(({ sec }) => sec.note.trim());
+    if(notedSections.length === 0){
+      return `<div class="outline-chapter"><div class="outline-chapter-title">${escapeHtml(ch.title)}</div>
+        <div class="outline-empty">（此章尚無備註）</div></div>`;
+    }
+    const items = notedSections.map(({ sec, si }) => `
+      <div class="outline-item">
+        <span class="outline-seal">${si + 1}</span>
+        <span class="outline-note">${escapeHtml(sec.note).replace(/\n/g, '<br>')}</span>
+      </div>
+    `).join('');
+    return `<div class="outline-chapter"><div class="outline-chapter-title">${escapeHtml(ch.title)}</div>${items}</div>`;
+  }).join('');
 }
 
 /* ---------------- top-level render ---------------- */
@@ -2172,7 +2383,7 @@ document.getElementById('modeSelect').addEventListener('change', e => {
 });
 
 document.getElementById('addChapterBtn').onclick = () => {
-  const ch = { id: newId(), title: '新章節', sections: [{ id: newId(), text: '', note: '' }] };
+  const ch = { id: newId(), title: '新章節', targetWords: 2500, sections: [{ id: newId(), text: '', note: '' }] };
   withHistory(() => { currentBook().chapters.push(ch); currentBook().currentChapterId = ch.id; });
   renderAll();
 };
@@ -2187,13 +2398,36 @@ window.addEventListener('keydown', e => {
   else if(k === 'y' || (k === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
 });
 
-document.getElementById('endSessionBtn').onclick = () => {
+async function pushVaultToDriveSilently(){
+  if(!state.settings.googleConnected || !vaultKey) return { attempted: false };
+  try{
+    await ensureGoogleToken();
+    const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
+    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
+    await driveUploadVault(payload);
+    return { attempted: true, ok: true };
+  } catch(err){
+    return { attempted: true, ok: false, error: err };
+  }
+}
+
+document.getElementById('endSessionBtn').onclick = async () => {
   flushPending();
   saveSnapshot('本次寫作結束');
   schedulePersist();
   const tag = document.getElementById('autosaveTag');
   tag.innerHTML = '<span class="dot" style="background:var(--vermillion)"></span>本次寫作已存為快照';
-  setTimeout(() => flashAutosave(), 1800);
+
+  if(state.settings.googleConnected){
+    tag.innerHTML = '<span class="dot" style="background:var(--vermillion)"></span>已存快照，同步到 Drive 中…';
+    const result = await pushVaultToDriveSilently();
+    if(result.attempted && result.ok){
+      tag.innerHTML = '<span class="dot"></span>已存快照並同步到 Drive';
+    } else if(result.attempted){
+      tag.innerHTML = '<span class="dot" style="background:var(--vermillion)"></span>已存快照，但 Drive 同步失敗（可到設定手動上傳）';
+    }
+  }
+  setTimeout(() => flashAutosave(), 2200);
 };
 
 
@@ -2544,10 +2778,12 @@ document.getElementById('histAdd').onclick = () => {
 function showView(view){
   document.getElementById('rows').style.display = view === 'edit' ? 'block' : 'none';
   document.getElementById('stats-strip').style.display = view === 'edit' ? 'flex' : 'none';
+  document.getElementById('punctBar').style.display = view === 'edit' ? 'flex' : 'none';
   document.getElementById('overview').style.display = view === 'overview' ? 'block' : 'none';
   document.getElementById('foreshadow').style.display = view === 'foreshadow' ? 'block' : 'none';
   document.getElementById('characters').style.display = view === 'characters' ? 'block' : 'none';
   document.getElementById('history').style.display = view === 'history' ? 'block' : 'none';
+  document.getElementById('outline').style.display = view === 'outline' ? 'block' : 'none';
   document.getElementById('chapterTitle').style.display = view === 'edit' ? 'block' : 'none';
   document.querySelector('.col-headers').style.display = view === 'edit' ? 'grid' : 'none';
   document.getElementById('modeSelect').style.display = view === 'edit' ? 'inline-block' : 'none';
@@ -2555,6 +2791,7 @@ function showView(view){
   if(view === 'foreshadow') renderForeshadow();
   if(view === 'characters') renderCharacters();
   if(view === 'history') renderHistory();
+  if(view === 'outline') renderOutline();
 }
 
 document.getElementById('overviewBtn').onclick = () => showView('overview');
@@ -2563,6 +2800,8 @@ document.getElementById('foreshadowBtn').onclick = () => showView('foreshadow');
 document.getElementById('closeForeshadow').onclick = () => showView('edit');
 document.getElementById('characterBtn').onclick = () => showView('characters');
 document.getElementById('closeCharacters').onclick = () => showView('edit');
+document.getElementById('outlineBtn').onclick = () => showView('outline');
+document.getElementById('closeOutline').onclick = () => showView('edit');
 document.getElementById('historyBtn').onclick = () => showView('history');
 document.getElementById('closeHistory').onclick = () => showView('edit');
 
@@ -2861,6 +3100,8 @@ function openSettingsModal(){
   document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
+  document.getElementById('sensitiveWordsInput').value = state.settings.sensitiveWords.join('\n');
+  document.getElementById('sensitiveWordsMsg').textContent = '';
   document.getElementById('settingsBackdrop').style.display = 'flex';
   trySilentGoogleReconnect();
   const msg = document.getElementById('keySoundMsg');
@@ -2925,6 +3166,17 @@ document.getElementById('dailyGoalInput').addEventListener('change', e => {
   e.target.value = state.settings.dailyGoal;
   schedulePersist();
 });
+
+document.getElementById('saveSensitiveWordsBtn').onclick = () => {
+  normalizeSettings();
+  const words = document.getElementById('sensitiveWordsInput').value
+    .split('\n').map(w => w.trim()).filter(Boolean);
+  state.settings.sensitiveWords = [...new Set(words)];
+  schedulePersist();
+  const msg = document.getElementById('sensitiveWordsMsg');
+  msg.style.color = '#4C7A3E';
+  msg.textContent = `已儲存，共 ${state.settings.sensitiveWords.length} 個詞`;
+};
 
 function isMobileViewport(){
   return window.innerWidth <= 700;
@@ -3302,6 +3554,187 @@ document.getElementById('driveDownloadBtn').onclick = async () => {
     msg.textContent = '下載失敗：' + ((err && err.message) || '密碼錯誤或網路問題，請再試一次');
   }
 };
+
+/* ================= punctuation quick-insert bar ================= */
+let lastFocusedTextarea = null;
+document.addEventListener('focusin', e => {
+  if(e.target.tagName === 'TEXTAREA' && e.target.dataset.role === 'text'){
+    lastFocusedTextarea = e.target;
+  }
+});
+
+function insertIntoLastFocused(open, close){
+  const ta = lastFocusedTextarea;
+  if(!ta || !document.body.contains(ta)){
+    alert('請先點一下要輸入的正文欄位，再使用這個按鈕');
+    return;
+  }
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const before = ta.value.slice(0, start);
+  const selected = ta.value.slice(start, end);
+  const after = ta.value.slice(end);
+  const insertion = close ? (open + selected + close) : open;
+  ta.value = before + insertion + after;
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  const newPos = selected ? (start + insertion.length) : (start + open.length);
+  ta.focus();
+  ta.setSelectionRange(newPos, newPos);
+}
+
+document.querySelectorAll('.punct-btn[data-open]').forEach(btn => {
+  btn.onclick = () => insertIntoLastFocused(btn.dataset.open, btn.dataset.close || '');
+});
+document.getElementById('sceneBreakBtn').onclick = () => insertIntoLastFocused('\n◇　◇　◇\n', '');
+
+/* ================= search ================= */
+document.getElementById('searchBtn').onclick = () => {
+  document.getElementById('searchBackdrop').style.display = 'flex';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('searchInput').focus();
+};
+document.getElementById('searchCloseBtn').onclick = () => { document.getElementById('searchBackdrop').style.display = 'none'; };
+document.getElementById('searchBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'searchBackdrop') document.getElementById('searchBackdrop').style.display = 'none';
+});
+window.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && e.key.toLowerCase() === 'f' && document.getElementById('appRoot').classList.contains('active')){
+    const sidebarVisible = document.getElementById('sidebar').style.display !== 'none';
+    if(sidebarVisible){
+      e.preventDefault();
+      document.getElementById('searchBtn').click();
+    }
+  }
+});
+
+let searchDebounceTimer = null;
+document.getElementById('searchInput').addEventListener('input', e => {
+  clearTimeout(searchDebounceTimer);
+  const q = e.target.value.trim();
+  searchDebounceTimer = setTimeout(() => renderSearchResults(q), 150);
+});
+
+function buildSnippet(content, idx, qlen){
+  const start = Math.max(0, idx - 15);
+  const end = Math.min(content.length, idx + qlen + 25);
+  const before = content.slice(start, idx);
+  const match = content.slice(idx, idx + qlen);
+  const after = content.slice(idx + qlen, end);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < content.length ? '…' : '';
+  return prefix + escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after) + suffix;
+}
+
+function renderSearchResults(query){
+  const box = document.getElementById('searchResults');
+  if(!query){ box.innerHTML = ''; return; }
+  const qLower = query.toLowerCase();
+  const results = [];
+  currentBook().chapters.forEach(ch => {
+    ch.sections.forEach((sec, si) => {
+      [['text', '正文'], ['note', '備註']].forEach(([field, label]) => {
+        const content = sec[field] || '';
+        const idx = content.toLowerCase().indexOf(qLower);
+        if(idx !== -1){
+          results.push({
+            chapterTitle: ch.title, chapterId: ch.id, sectionId: sec.id, si, field, label,
+            snippet: buildSnippet(content, idx, query.length)
+          });
+        }
+      });
+    });
+  });
+  if(results.length === 0){
+    box.innerHTML = '<div class="lib-empty">沒有找到符合的內容</div>';
+    return;
+  }
+  box.innerHTML = results.map((r, i) => `
+    <div class="search-result" data-idx="${i}">
+      <div class="search-result-meta">${escapeHtml(r.chapterTitle)} · 第 ${r.si + 1} 節 · ${r.label}</div>
+      <div class="search-result-snippet">${r.snippet}</div>
+    </div>
+  `).join('');
+  box.querySelectorAll('.search-result').forEach((el, i) => {
+    el.onclick = () => jumpToSearchResult(results[i]);
+  });
+}
+
+function jumpToSearchResult(r){
+  currentBook().currentChapterId = r.chapterId;
+  renderAll();
+  showView('edit');
+  document.getElementById('searchBackdrop').style.display = 'none';
+  setTimeout(() => {
+    const row = document.querySelector(`.row[data-id="${r.sectionId}"]`);
+    if(!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const ta = row.querySelector(`[data-role="${r.field}"]`);
+    if(ta){
+      ta.focus();
+      row.classList.add('search-highlight');
+      setTimeout(() => row.classList.remove('search-highlight'), 1600);
+    }
+  }, 60);
+}
+
+/* ================= sensitive word check ================= */
+document.getElementById('wordCheckBtn').onclick = () => {
+  normalizeSettings();
+  document.getElementById('wordCheckBackdrop').style.display = 'flex';
+  runWordCheck();
+};
+document.getElementById('wordCheckCloseBtn').onclick = () => { document.getElementById('wordCheckBackdrop').style.display = 'none'; };
+document.getElementById('wordCheckBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'wordCheckBackdrop') document.getElementById('wordCheckBackdrop').style.display = 'none';
+});
+
+function runWordCheck(){
+  const box = document.getElementById('wordCheckResults');
+  const sub = document.getElementById('wordCheckSub');
+  const words = state.settings.sensitiveWords;
+  if(words.length === 0){
+    sub.textContent = '目前詞庫是空的';
+    box.innerHTML = '<div class="lib-empty">還沒有設定敏感詞庫，到「設定」裡貼上你的詞庫清單後再回來檢查</div>';
+    return;
+  }
+  const results = [];
+  currentBook().chapters.forEach(ch => {
+    ch.sections.forEach((sec, si) => {
+      const content = sec.text || '';
+      words.forEach(w => {
+        let searchFrom = 0;
+        let idx;
+        while((idx = content.indexOf(w, searchFrom)) !== -1){
+          results.push({
+            word: w, chapterTitle: ch.title, chapterId: ch.id, sectionId: sec.id, si, field: 'text',
+            snippet: buildSnippet(content, idx, w.length)
+          });
+          searchFrom = idx + w.length;
+        }
+      });
+    });
+  });
+  sub.textContent = `已比對詞庫中 ${words.length} 個詞，掃描全書正文`;
+  if(results.length === 0){
+    box.innerHTML = '<div class="lib-empty" style="color:#4C7A3E;">沒有找到符合詞庫的內容 👍</div>';
+    return;
+  }
+  box.innerHTML = results.map((r, i) => `
+    <div class="search-result" data-idx="${i}">
+      <div class="wc-hit-word">${escapeHtml(r.word)}</div>
+      <div class="search-result-meta">${escapeHtml(r.chapterTitle)} · 第 ${r.si + 1} 節</div>
+      <div class="search-result-snippet">${r.snippet}</div>
+    </div>
+  `).join('');
+  box.querySelectorAll('.search-result').forEach((el, i) => {
+    el.onclick = () => {
+      document.getElementById('wordCheckBackdrop').style.display = 'none';
+      jumpToSearchResult(results[i]);
+    };
+  });
+}
 
 boot();
 </script>
