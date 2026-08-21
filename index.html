@@ -724,6 +724,50 @@
     font-size:10px; color:var(--ink-faint); opacity:0.6; font-variant-numeric:tabular-nums;
   }
 
+  /* 強制密碼欄位遮罩（避免某些瀏覽器／字體顯示異常） */
+  input[type="password"]{
+    -webkit-text-security: disc !important;
+    text-security: disc !important;
+  }
+
+  /* ---------- Password prompt modal（取代 window.prompt 明文） ---------- */
+  #pwPromptBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.45); z-index:300;
+    align-items:center; justify-content:center;
+  }
+  #pwPromptBackdrop.open{ display:flex; }
+  #pwPromptModal{
+    width:340px; max-width:90vw; background:var(--paper); border-radius:10px;
+    padding:22px 20px 18px; box-shadow:0 12px 40px rgba(0,0,0,.18);
+  }
+  #pwPromptModal h3{
+    font-family:"Noto Serif SC", serif; font-size:15px; margin:0 0 8px; color:var(--ink);
+  }
+  #pwPromptModal .pw-prompt-sub{
+    font-size:12px; color:var(--ink-faint); line-height:1.55; margin:0 0 14px;
+  }
+  #pwPromptModal input[type="password"]{
+    width:100%; padding:10px 12px; font-size:14px; font-family:inherit;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    box-sizing:border-box; margin-bottom:10px;
+  }
+  #pwPromptError{
+    font-size:12px; color:var(--vermillion); min-height:16px; margin-bottom:8px;
+  }
+  #pwPromptActions{
+    display:flex; gap:8px; justify-content:flex-end;
+  }
+  #pwPromptActions button{
+    padding:8px 14px; font-size:12.5px; border-radius:var(--radius); cursor:pointer; font-family:inherit;
+  }
+  #pwPromptCancel{
+    background:transparent; border:1px solid var(--line); color:var(--ink-soft);
+  }
+  #pwPromptConfirm{
+    background:var(--ink); border:none; color:var(--paper);
+  }
+  #pwPromptConfirm:hover{ background:#413C33; }
+
   /* ---------- Backup modal ---------- */
   #backupBackdrop{
     display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
@@ -1183,8 +1227,12 @@
 
     <div id="gate-setup" style="display:none;">
       <h1>稿 紙</h1>
-      <div class="gate-sub">第一次使用，請設定一組密碼</div>
-      <div class="gate-warn">此密碼用於端對端加密你的所有內容，僅存在於你的裝置上。<b>忘記密碼將無法救回任何資料</b>，請務必妥善保管，建議另外抄錄在安全的地方。</div>
+      <div class="gate-sub">本機尚未找到寫作資料</div>
+      <div class="gate-warn">
+        可能原因：第一次使用、換了開啟網址、或瀏覽器清除了網站資料。<br>
+        <b>若你之前有寫過內容</b>，請優先用下方「從備份檔匯入」，或之後到設定裡從 Google Drive 還原。<br>
+        設定密碼後，內容會加密存在目前這個瀏覽器；<b>忘記密碼將無法救回本機資料</b>，請務必另外記下來。
+      </div>
       <form id="setupForm">
         <div class="gate-field">
           <label>設定密碼（至少 6 個字元）</label>
@@ -1207,7 +1255,7 @@
           </div>
           <div class="gate-field">
             <label>該備份檔的密碼</label>
-            <input type="password" id="setupImportPw" required />
+            <input type="password" id="setupImportPw" autocomplete="current-password" required />
           </div>
           <div class="gate-error" id="setupImportError"></div>
           <button type="submit" class="gate-submit">匯入並開始使用</button>
@@ -1529,20 +1577,34 @@
       <h4>從備份檔還原</h4>
       <p>選擇備份檔並輸入該檔案的密碼，將會覆蓋目前裝置上的所有內容，請先確認。</p>
       <input type="file" id="restoreFile" accept=".json,.txt" />
-      <input type="password" id="restorePw" placeholder="備份檔的密碼" />
+      <input type="password" id="restorePw" placeholder="備份檔的密碼" autocomplete="current-password" />
       <button class="backup-btn" id="doRestoreBackup">還原（覆蓋目前內容）</button>
       <div class="backup-msg" id="restoreBackupMsg"></div>
     </div>
 
     <div class="backup-section">
       <h4>更改密碼</h4>
-      <input type="password" id="newPw1" placeholder="新密碼（至少 6 個字元）" />
-      <input type="password" id="newPw2" placeholder="再次輸入新密碼" />
+      <input type="password" id="newPw1" placeholder="新密碼（至少 6 個字元）" autocomplete="new-password" />
+      <input type="password" id="newPw2" placeholder="再次輸入新密碼" autocomplete="new-password" />
       <button class="backup-btn" id="doChangePw">更改密碼</button>
       <div class="backup-msg" id="changePwMsg"></div>
     </div>
 
     <button id="backupClose">關閉</button>
+  </div>
+</div>
+
+<!-- 密碼輸入彈窗（取代 window.prompt，避免明文） -->
+<div id="pwPromptBackdrop">
+  <div id="pwPromptModal">
+    <h3 id="pwPromptTitle">請輸入密碼</h3>
+    <p class="pw-prompt-sub" id="pwPromptSub">這份備份使用了不同的加密金鑰，請輸入當時的密碼。</p>
+    <input type="password" id="pwPromptInput" placeholder="備份檔的密碼" autocomplete="current-password" />
+    <div id="pwPromptError"></div>
+    <div id="pwPromptActions">
+      <button type="button" id="pwPromptCancel">取消</button>
+      <button type="button" id="pwPromptConfirm">確定</button>
+    </div>
   </div>
 </div>
 
@@ -1588,7 +1650,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-11 09:50';
+const APP_BUILD = '2026-08-21 20:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3698,6 +3760,39 @@ document.getElementById('driveUploadBtn').onclick = async () => {
   }
 };
 
+/** 用有遮罩的密碼彈窗取代 window.prompt（原生 prompt 永遠是明文） */
+function askPassword(title, subtitle){
+  return new Promise(resolve => {
+    const backdrop = document.getElementById('pwPromptBackdrop');
+    const input = document.getElementById('pwPromptInput');
+    const errEl = document.getElementById('pwPromptError');
+    document.getElementById('pwPromptTitle').textContent = title || '請輸入密碼';
+    document.getElementById('pwPromptSub').textContent = subtitle || '';
+    errEl.textContent = '';
+    input.value = '';
+    backdrop.classList.add('open');
+    setTimeout(() => input.focus(), 50);
+
+    const cleanup = () => {
+      backdrop.classList.remove('open');
+      document.getElementById('pwPromptConfirm').onclick = null;
+      document.getElementById('pwPromptCancel').onclick = null;
+      input.onkeydown = null;
+    };
+    document.getElementById('pwPromptCancel').onclick = () => { cleanup(); resolve(null); };
+    document.getElementById('pwPromptConfirm').onclick = () => {
+      const v = input.value;
+      if(!v){ errEl.textContent = '請輸入密碼'; return; }
+      cleanup();
+      resolve(v);
+    };
+    input.onkeydown = e => {
+      if(e.key === 'Enter') document.getElementById('pwPromptConfirm').click();
+      if(e.key === 'Escape') document.getElementById('pwPromptCancel').click();
+    };
+  });
+}
+
 document.getElementById('driveDownloadBtn').onclick = async () => {
   const msg = document.getElementById('syncMsg');
   msg.style.color = 'var(--ink-faint)';
@@ -3719,7 +3814,10 @@ document.getElementById('driveDownloadBtn').onclick = async () => {
       // 與本機使用同一組密碼衍生的金鑰，可直接解密
       loaded = await CryptoVault.decryptJSON(vaultKey, rec.iv, rec.ciphertext);
     } else {
-      const pw = window.prompt('這份 Drive 備份是用不同的金鑰加密的，請輸入該備份的密碼：');
+      const pw = await askPassword(
+        '請輸入備份密碼',
+        '這份 Drive 備份使用了不同的加密金鑰，請輸入當時設定的密碼。'
+      );
       if(pw === null){ msg.textContent = ''; return; }
       const key = await CryptoVault.deriveKey(pw, rec.salt);
       loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
