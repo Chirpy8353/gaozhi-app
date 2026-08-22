@@ -768,6 +768,43 @@
   }
   #pwPromptConfirm:hover{ background:#413C33; }
 
+  /* ---------- 本機 vs 雲端 選擇 ---------- */
+  #syncChoiceBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.5); z-index:320;
+    align-items:center; justify-content:center;
+  }
+  #syncChoiceBackdrop.open{ display:flex; }
+  #syncChoiceModal{
+    width:380px; max-width:92vw; background:var(--paper); border-radius:10px;
+    padding:22px 20px 18px; box-shadow:0 12px 40px rgba(0,0,0,.2);
+  }
+  #syncChoiceModal h3{
+    font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 8px;
+  }
+  #syncChoiceModal .sc-sub{
+    font-size:12px; color:var(--ink-faint); line-height:1.6; margin:0 0 14px;
+  }
+  .sc-cards{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .sc-card{
+    border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px;
+    font-size:12.5px; color:var(--ink); line-height:1.5; background:var(--white);
+  }
+  .sc-card strong{ display:block; margin-bottom:4px; font-size:13px; }
+  .sc-card.recommend{ border-color:var(--vermillion-soft); background:var(--vermillion-bg); }
+  #syncChoiceActions{ display:flex; flex-direction:column; gap:8px; }
+  #syncChoiceActions button{
+    padding:10px 14px; font-size:13px; border-radius:var(--radius); cursor:pointer; font-family:inherit;
+  }
+  #syncChoiceLocal{
+    background:var(--ink); border:none; color:var(--paper);
+  }
+  #syncChoiceCloud{
+    background:var(--white); border:1px solid var(--line); color:var(--ink);
+  }
+  #syncChoiceSkip{
+    background:transparent; border:none; color:var(--ink-faint); font-size:12px; text-decoration:underline;
+  }
+
   /* ---------- Backup modal ---------- */
   #backupBackdrop{
     display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
@@ -1006,11 +1043,25 @@
     width:480px; max-width:92vw; max-height:75vh; overflow-y:auto; padding:22px;
   }
   #searchModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 12px; }
-  #searchInput{
+  #searchInput, #replaceInput{
     width:100%; box-sizing:border-box; font-family:inherit; font-size:14px; padding:9px 12px;
     border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
-    margin-bottom:14px;
+    margin-bottom:8px;
   }
+  .search-row-label{ font-size:11px; color:var(--ink-soft); margin:0 0 4px; }
+  .search-toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; font-size:12px; color:var(--ink-soft);
+  }
+  .search-toolbar label{ display:inline-flex; align-items:center; gap:4px; cursor:pointer; }
+  .search-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .search-actions button{
+    padding:7px 12px; font-size:12.5px; border-radius:var(--radius); cursor:pointer; font-family:inherit;
+    background:var(--white); border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .search-actions button.primary{ background:var(--ink); border:none; color:var(--paper); }
+  .search-actions button:disabled{ opacity:0.45; cursor:not-allowed; }
+  #searchMatchCount{ font-size:11.5px; color:var(--ink-faint); margin-bottom:8px; min-height:16px; }
+  #searchReplaceMsg{ font-size:11.5px; margin-bottom:8px; min-height:16px; }
   .search-result{
     padding:10px 12px; border:1px solid var(--line-soft); border-radius:var(--radius);
     margin-bottom:8px; cursor:pointer; background:var(--white);
@@ -1415,8 +1466,22 @@
 
 <div id="searchBackdrop">
   <div id="searchModal">
-    <h3>搜尋</h3>
+    <h3>搜尋與替換</h3>
+    <div class="search-row-label">尋找</div>
     <input type="text" id="searchInput" placeholder="搜尋本書的正文與備註…" />
+    <div class="search-row-label">替換為</div>
+    <input type="text" id="replaceInput" placeholder="替換文字（可留空＝刪除找到的字）" />
+    <div class="search-toolbar">
+      <label><input type="checkbox" id="searchInText" checked /> 正文</label>
+      <label><input type="checkbox" id="searchInNote" checked /> 備註</label>
+      <label><input type="checkbox" id="searchCaseSensitive" /> 區分大小寫</label>
+    </div>
+    <div class="search-actions">
+      <button type="button" id="searchFindBtn">尋找</button>
+      <button type="button" class="primary" id="searchReplaceAllBtn">全部替換</button>
+    </div>
+    <div id="searchMatchCount"></div>
+    <div id="searchReplaceMsg"></div>
     <div id="searchResults"></div>
     <button id="searchCloseBtn">關閉</button>
   </div>
@@ -1627,6 +1692,23 @@
   </div>
 </div>
 
+<!-- 開 App：本機 vs 雲端 -->
+<div id="syncChoiceBackdrop">
+  <div id="syncChoiceModal">
+    <h3>要以哪一份內容為準？</h3>
+    <p class="sc-sub" id="syncChoiceSub">本機與雲端備份不一致。請選擇接下來要使用的那一份；選定後，書寫都在本機進行，雲端只負責被更新備份。</p>
+    <div class="sc-cards">
+      <div class="sc-card" id="syncChoiceLocalCard"><strong>本機</strong><span id="syncChoiceLocalInfo">—</span></div>
+      <div class="sc-card" id="syncChoiceCloudCard"><strong>雲端（Google Drive）</strong><span id="syncChoiceCloudInfo">—</span></div>
+    </div>
+    <div id="syncChoiceActions">
+      <button type="button" id="syncChoiceLocal">使用本機內容</button>
+      <button type="button" id="syncChoiceCloud">使用雲端內容</button>
+      <button type="button" id="syncChoiceSkip">暫用本機，稍後再決定</button>
+    </div>
+  </div>
+</div>
+
 <div id="settingsBackdrop">
   <div id="settingsModal">
     <h3>設定</h3>
@@ -1691,7 +1773,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 20:30';
+const APP_BUILD = '2026-08-22 22:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3285,6 +3367,143 @@ function showGate(mode){
   });
 }
 
+function formatStateSummary(s){
+  if(!s) return '無資料';
+  const books = s.books || [];
+  let chars = 0;
+  books.forEach(b => (b.chapters || []).forEach(ch => (ch.sections || []).forEach(sec => {
+    chars += (sec.text || '').length;
+  })));
+  const n = books.length;
+  const score = stateContentScore(s);
+  let latest = 0;
+  books.forEach(b => { if(b.updatedAt && b.updatedAt > latest) latest = b.updatedAt; });
+  const time = latest ? formatSyncTime(latest) : '—';
+  return `${n} 部作品 · 約 ${chars} 字 · 最近更新 ${time}`;
+}
+
+function askLocalOrCloud(localInfo, cloudInfo, recommend){
+  return new Promise(resolve => {
+    const backdrop = document.getElementById('syncChoiceBackdrop');
+    document.getElementById('syncChoiceLocalInfo').textContent = localInfo;
+    document.getElementById('syncChoiceCloudInfo').textContent = cloudInfo;
+    const localCard = document.getElementById('syncChoiceLocalCard');
+    const cloudCard = document.getElementById('syncChoiceCloudCard');
+    localCard.classList.toggle('recommend', recommend === 'local');
+    cloudCard.classList.toggle('recommend', recommend === 'cloud');
+    backdrop.classList.add('open');
+    const done = (choice) => {
+      backdrop.classList.remove('open');
+      document.getElementById('syncChoiceLocal').onclick = null;
+      document.getElementById('syncChoiceCloud').onclick = null;
+      document.getElementById('syncChoiceSkip').onclick = null;
+      resolve(choice);
+    };
+    document.getElementById('syncChoiceLocal').onclick = () => done('local');
+    document.getElementById('syncChoiceCloud').onclick = () => done('cloud');
+    document.getElementById('syncChoiceSkip').onclick = () => done('local');
+  });
+}
+
+/**
+ * 解鎖後：若曾連結 Google，比對本機與雲端，必要時請使用者選擇以哪一份為準。
+ * 選定後才 enterApp；之後本機書寫，雲端只負責被更新。
+ */
+async function resolveLocalVsCloud(localState, unlockPassword){
+  if(!localState.settings) localState.settings = {};
+  if(typeof localState.settings.googleConnected !== 'boolean') localState.settings.googleConnected = false;
+  if(typeof localState.settings.autoSync !== 'boolean') localState.settings.autoSync = true;
+
+  // 未開通過雲端：直接用本機
+  if(!localState.settings.googleConnected){
+    return { state: localState, source: 'local-only' };
+  }
+
+  // 嘗試取得雲端（為書寫備援：先靜默，再必要時明示授權）
+  try{
+    try{
+      await requestGoogleToken('');
+    } catch(e){
+      await requestGoogleToken('consent');
+    }
+  } catch(err){
+    // 無法連 Google：仍用本機，稍後上傳時再要授權
+    return { state: localState, source: 'local-offline' };
+  }
+
+  let cloudRec = null;
+  try{
+    const result = await driveDownloadVault();
+    if(result && result.data) cloudRec = result.data;
+  } catch(err){
+    return { state: localState, source: 'local-cloud-fail' };
+  }
+  if(!cloudRec || !cloudRec.ciphertext){
+    return { state: localState, source: 'local-no-cloud-file' };
+  }
+
+  // 解密雲端
+  let cloudState = null;
+  let cloudKey = vaultKey;
+  let cloudSalt = vaultSalt;
+  try{
+    if(cloudRec.salt === vaultSalt){
+      cloudState = await CryptoVault.decryptJSON(vaultKey, cloudRec.iv, cloudRec.ciphertext);
+    } else if(unlockPassword){
+      cloudKey = await CryptoVault.deriveKey(unlockPassword, cloudRec.salt);
+      cloudState = await CryptoVault.decryptJSON(cloudKey, cloudRec.iv, cloudRec.ciphertext);
+      cloudSalt = cloudRec.salt;
+    } else {
+      return { state: localState, source: 'local-cloud-key-mismatch' };
+    }
+  } catch(err){
+    return { state: localState, source: 'local-cloud-decrypt-fail' };
+  }
+
+  const localScore = stateContentScore(localState);
+  const cloudScore = stateContentScore(cloudState);
+  const localSum = formatStateSummary(localState);
+  const cloudSum = formatStateSummary(cloudState);
+
+  // 兩邊都幾乎空，或分數非常接近 → 用本機
+  if(localScore < 10 && cloudScore < 10){
+    return { state: localState, source: 'local-both-empty' };
+  }
+  // 本機空、雲端有內容 → 建議雲端，仍詢問（書寫前確認）
+  // 雲端空、本機有 → 用本機
+  if(cloudScore < 10 && localScore >= 10){
+    return { state: localState, source: 'local-cloud-empty' };
+  }
+
+  const scoreDiff = Math.abs(localScore - cloudScore);
+  const similar = scoreDiff < Math.max(50, Math.max(localScore, cloudScore) * 0.05);
+  if(similar && localScore >= 10){
+    // 幾乎一樣：用本機，進入後自動備份更新雲端
+    return { state: localState, source: 'local-similar' };
+  }
+
+  let recommend = 'local';
+  if(localScore < 10 && cloudScore >= 10) recommend = 'cloud';
+  else if(cloudScore > localScore * 1.5) recommend = 'cloud';
+  else if(localScore > cloudScore * 1.5) recommend = 'local';
+
+  const choice = await askLocalOrCloud(localSum, cloudSum, recommend);
+  if(choice === 'cloud'){
+    vaultKey = cloudKey;
+    vaultSalt = cloudSalt;
+    if(!cloudState.settings) cloudState.settings = {};
+    cloudState.settings.googleConnected = true;
+    // 寫入本機，之後以這份為準
+    try{
+      const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, cloudState);
+      await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
+    } catch(e){}
+    setLastUploadScore(cloudScore);
+    return { state: cloudState, source: 'cloud' };
+  }
+  return { state: localState, source: 'local-chosen' };
+}
+
 function enterApp(loadedState){
   state = loadedState;
   idSeed = 1;
@@ -3293,17 +3512,15 @@ function enterApp(loadedState){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
   undoStack = []; redoStack = []; pendingSnapshot = null;
-  // 套用已同步回來的介面設定
   try{
     document.getElementById('rows').classList.toggle('grid-mode', !!state.settings.gridBg);
   } catch(e){}
   if(state.settings.keySound) loadKeyClickBuffers();
   showLibrary();
-  if(state.settings.googleConnected){
-    // 進入 App 後背景恢復 Drive token，不必等使用者打開設定
-    trySilentGoogleReconnect().then(ok => {
-      if(ok && state.settings.autoSync) scheduleDriveSync();
-    });
+  // 已在解鎖流程選好「以本機為準」：有連線則啟用自動備份（雲端只被更新）
+  if(state.settings.googleConnected && state.settings.autoSync){
+    if(isDriveTokenLive()) scheduleDriveSync();
+    else trySilentGoogleReconnect().then(ok => { if(ok) scheduleDriveSync(); });
   }
 }
 
@@ -3415,8 +3632,16 @@ document.getElementById('unlockForm').addEventListener('submit', async e => {
     const loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
     vaultKey = key; vaultSalt = rec.salt;
     document.getElementById('unlockPw').value = '';
-    enterApp(loaded);
+    errEl.style.color = 'var(--ink-faint)';
+    errEl.textContent = '正在核對本機與雲端備份…';
+    showGate('loading');
+    const resolved = await resolveLocalVsCloud(loaded, pw);
+    errEl.textContent = '';
+    errEl.style.color = '';
+    enterApp(resolved.state);
   } catch(err){
+    showGate('unlock');
+    errEl.style.color = '';
     errEl.textContent = '密碼錯誤，請再試一次';
   }
 });
@@ -4178,11 +4403,12 @@ document.querySelectorAll('.punct-btn[data-open]').forEach(btn => {
 });
 document.getElementById('sceneBreakBtn').onclick = () => insertIntoLastFocused('\n◇　◇　◇\n', '');
 
-/* ================= search ================= */
+/* ================= search & replace ================= */
 document.getElementById('searchBtn').onclick = () => {
   document.getElementById('searchBackdrop').style.display = 'flex';
-  document.getElementById('searchInput').value = '';
   document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('searchMatchCount').textContent = '';
+  document.getElementById('searchReplaceMsg').textContent = '';
   document.getElementById('searchInput').focus();
 };
 document.getElementById('searchCloseBtn').onclick = () => { document.getElementById('searchBackdrop').style.display = 'none'; };
@@ -4203,9 +4429,65 @@ window.addEventListener('keydown', e => {
 let searchDebounceTimer = null;
 document.getElementById('searchInput').addEventListener('input', e => {
   clearTimeout(searchDebounceTimer);
-  const q = e.target.value.trim();
-  searchDebounceTimer = setTimeout(() => renderSearchResults(q), 150);
+  document.getElementById('searchReplaceMsg').textContent = '';
+  searchDebounceTimer = setTimeout(() => renderSearchResults(), 150);
 });
+document.getElementById('searchInText').addEventListener('change', () => renderSearchResults());
+document.getElementById('searchInNote').addEventListener('change', () => renderSearchResults());
+document.getElementById('searchCaseSensitive').addEventListener('change', () => renderSearchResults());
+document.getElementById('searchFindBtn').onclick = () => renderSearchResults();
+
+function getSearchQuery(){
+  return document.getElementById('searchInput').value; // 保留首尾空白語意：trim 由呼叫端決定
+}
+
+function getSearchOptions(){
+  return {
+    inText: document.getElementById('searchInText').checked,
+    inNote: document.getElementById('searchInNote').checked,
+    caseSensitive: document.getElementById('searchCaseSensitive').checked
+  };
+}
+
+function countOccurrences(content, query, caseSensitive){
+  if(!query || !content) return 0;
+  if(caseSensitive){
+    let n = 0, from = 0, idx;
+    while((idx = content.indexOf(query, from)) !== -1){ n++; from = idx + Math.max(query.length, 1); }
+    return n;
+  }
+  const c = content.toLowerCase(), q = query.toLowerCase();
+  let n = 0, from = 0, idx;
+  while((idx = c.indexOf(q, from)) !== -1){ n++; from = idx + Math.max(q.length, 1); }
+  return n;
+}
+
+function firstIndex(content, query, caseSensitive){
+  if(!query || !content) return -1;
+  if(caseSensitive) return content.indexOf(query);
+  return content.toLowerCase().indexOf(query.toLowerCase());
+}
+
+function replaceAllInString(content, query, replacement, caseSensitive){
+  if(!query) return { text: content, count: 0 };
+  if(caseSensitive){
+    if(content.indexOf(query) === -1) return { text: content, count: 0 };
+    const parts = content.split(query);
+    return { text: parts.join(replacement), count: parts.length - 1 };
+  }
+  // 不區分大小寫：逐段替換，保留原文大小寫位置但換成 replacement
+  const q = query.toLowerCase();
+  let out = '', i = 0, count = 0;
+  const lower = content.toLowerCase();
+  while(i < content.length){
+    const idx = lower.indexOf(q, i);
+    if(idx === -1){ out += content.slice(i); break; }
+    out += content.slice(i, idx) + replacement;
+    count++;
+    i = idx + query.length;
+  }
+  return { text: out, count };
+}
 
 function buildSnippet(content, idx, qlen){
   const start = Math.max(0, idx - 15);
@@ -4218,32 +4500,58 @@ function buildSnippet(content, idx, qlen){
   return prefix + escapeHtml(before) + '<mark>' + escapeHtml(match) + '</mark>' + escapeHtml(after) + suffix;
 }
 
-function renderSearchResults(query){
-  const box = document.getElementById('searchResults');
-  if(!query){ box.innerHTML = ''; return; }
-  const qLower = query.toLowerCase();
+function collectSearchResults(){
+  const query = getSearchQuery();
+  const qTrim = query; // 允許搜尋空白？一般用原字串；全空白則不搜
+  if(!qTrim) return { query: '', totalHits: 0, results: [] };
+  const opt = getSearchOptions();
+  if(!opt.inText && !opt.inNote) return { query: qTrim, totalHits: 0, results: [] };
+  const book = currentBook();
+  if(!book) return { query: qTrim, totalHits: 0, results: [] };
   const results = [];
-  currentBook().chapters.forEach(ch => {
+  let totalHits = 0;
+  const fields = [];
+  if(opt.inText) fields.push(['text', '正文']);
+  if(opt.inNote) fields.push(['note', '備註']);
+  book.chapters.forEach(ch => {
     ch.sections.forEach((sec, si) => {
-      [['text', '正文'], ['note', '備註']].forEach(([field, label]) => {
+      fields.forEach(([field, label]) => {
         const content = sec[field] || '';
-        const idx = content.toLowerCase().indexOf(qLower);
-        if(idx !== -1){
+        const hits = countOccurrences(content, qTrim, opt.caseSensitive);
+        if(hits > 0){
+          totalHits += hits;
+          const idx = firstIndex(content, qTrim, opt.caseSensitive);
           results.push({
             chapterTitle: ch.title, chapterId: ch.id, sectionId: sec.id, si, field, label,
-            snippet: buildSnippet(content, idx, query.length)
+            hits,
+            snippet: buildSnippet(content, idx, qTrim.length)
           });
         }
       });
     });
   });
+  return { query: qTrim, totalHits, results };
+}
+
+function renderSearchResults(){
+  const box = document.getElementById('searchResults');
+  const countEl = document.getElementById('searchMatchCount');
+  const { query, totalHits, results } = collectSearchResults();
+  if(!query){
+    box.innerHTML = '';
+    countEl.textContent = '';
+    return;
+  }
+  countEl.textContent = totalHits > 0
+    ? `共 ${totalHits} 處符合（分布在 ${results.length} 個欄位）`
+    : '沒有找到符合的內容';
   if(results.length === 0){
     box.innerHTML = '<div class="lib-empty">沒有找到符合的內容</div>';
     return;
   }
   box.innerHTML = results.map((r, i) => `
     <div class="search-result" data-idx="${i}">
-      <div class="search-result-meta">${escapeHtml(r.chapterTitle)} · 第 ${r.si + 1} 節 · ${r.label}</div>
+      <div class="search-result-meta">${escapeHtml(r.chapterTitle)} · 第 ${r.si + 1} 節 · ${r.label}${r.hits > 1 ? ` · ${r.hits} 處` : ''}</div>
       <div class="search-result-snippet">${r.snippet}</div>
     </div>
   `).join('');
@@ -4269,6 +4577,58 @@ function jumpToSearchResult(r){
     }
   }, 60);
 }
+
+document.getElementById('searchReplaceAllBtn').onclick = () => {
+  const query = getSearchQuery();
+  const msg = document.getElementById('searchReplaceMsg');
+  msg.textContent = '';
+  if(!query){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '請先輸入要尋找的文字';
+    return;
+  }
+  const opt = getSearchOptions();
+  if(!opt.inText && !opt.inNote){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '請至少勾選正文或備註';
+    return;
+  }
+  const { totalHits } = collectSearchResults();
+  if(totalHits === 0){
+    msg.style.color = 'var(--vermillion)';
+    msg.textContent = '沒有可替換的內容';
+    return;
+  }
+  const replacement = document.getElementById('replaceInput').value;
+  const preview = replacement === '' ? '（空＝刪除）' : `「${replacement}」`;
+  if(!confirm(`將在目前作品中，把 ${totalHits} 處「${query}」替換為 ${preview}。\n可透過撤銷還原。確定嗎？`)) return;
+
+  let replaced = 0;
+  withHistory(() => {
+    const book = currentBook();
+    const fields = [];
+    if(opt.inText) fields.push('text');
+    if(opt.inNote) fields.push('note');
+    book.chapters.forEach(ch => {
+      ch.sections.forEach(sec => {
+        fields.forEach(field => {
+          const content = sec[field] || '';
+          const r = replaceAllInString(content, query, replacement, opt.caseSensitive);
+          if(r.count > 0){
+            sec[field] = r.text;
+            replaced += r.count;
+          }
+        });
+      });
+    });
+    book.updatedAt = Date.now();
+  });
+  schedulePersist();
+  renderAll();
+  msg.style.color = '#4C7A3E';
+  msg.textContent = `已替換 ${replaced} 處` + (replaced > 0 ? '（可 Ctrl+Z 撤銷）' : '');
+  renderSearchResults();
+};
 
 /* ================= sensitive word check ================= */
 document.getElementById('wordCheckBtn').onclick = () => {
