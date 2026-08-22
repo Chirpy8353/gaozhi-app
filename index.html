@@ -1691,7 +1691,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 20:20';
+const APP_BUILD = '2026-08-22 20:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2518,18 +2518,78 @@ window.addEventListener('keydown', e => {
   else if(k === 'y' || (k === 'z' && e.shiftKey)){ e.preventDefault(); redo(); }
 });
 
-async function pushVaultToDriveSilently(){
+/** 粗估內容量：防止空庫／幾乎空白的本機狀態自動蓋掉雲端好備份 */
+function stateContentScore(s){
+  if(!s) return 0;
+  let score = 0;
+  const books = s.books || [];
+  score += books.length * 1000;
+  books.forEach(b => {
+    (b.chapters || []).forEach(ch => {
+      score += 50;
+      (ch.sections || []).forEach(sec => {
+        score += (sec.text || '').length + Math.floor((sec.note || '').length / 2);
+      });
+    });
+    score += (b.versionHistory || []).length * 20;
+  });
+  score += (s.trash || []).length * 100;
+  return score;
+}
+
+const LS_LAST_UPLOAD_SCORE = 'gaozhi_last_upload_score';
+function getLastUploadScore(){
+  try{ return parseInt(localStorage.getItem(LS_LAST_UPLOAD_SCORE) || '0', 10) || 0; } catch(e){ return 0; }
+}
+function setLastUploadScore(n){
+  try{ localStorage.setItem(LS_LAST_UPLOAD_SCORE, String(n)); } catch(e){}
+}
+
+let lastSyncedStateHash = null;
+function stateSyncHash(s){
+  // 輕量雜湊：有改動才自動上傳
+  try{
+    return String(stateContentScore(s)) + ':' + (s.books || []).map(b => b.updatedAt || 0).join(',');
+  } catch(e){ return String(Date.now()); }
+}
+
+async function pushVaultToDriveSilently(opts){
+  opts = opts || {};
+  const force = !!opts.force; // 使用者手動「立即上傳」時可 force
   if(!state || !state.settings || !state.settings.googleConnected || !vaultKey) return { attempted: false };
   if(driveSyncInFlight) return { attempted: false };
   driveSyncInFlight = true;
   try{
-    normalizeSettings(); // 確保設定欄位齊全後再加密上傳
+    normalizeSettings();
+    const score = stateContentScore(state);
+    const hash = stateSyncHash(state);
+
+    // 沒改動就不傳（手動 force 除外）
+    if(!force && lastSyncedStateHash && hash === lastSyncedStateHash){
+      return { attempted: false, reason: 'unchanged' };
+    }
+
+    // 本機幾乎空白：禁止自動上傳，避免蓋掉雲端有內容的備份
+    if(!force && score < 10){
+      console.warn('skip Drive upload: local vault nearly empty', score);
+      return { attempted: false, reason: 'empty-local' };
+    }
+
+    // 本機內容量明顯少於上次成功上傳：禁止自動上傳（可能是本機被清空後誤同步）
+    const prev = getLastUploadScore();
+    if(!force && prev > 100 && score < prev * 0.3){
+      console.warn('skip Drive upload: local much smaller than last upload', { score, prev });
+      return { attempted: false, reason: 'shrink-guard' };
+    }
+
     await ensureGoogleToken();
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
-    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
+    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1, contentScore: score };
     await driveUploadVault(payload);
     setLastDriveSync(Date.now());
-    return { attempted: true, ok: true };
+    setLastUploadScore(score);
+    lastSyncedStateHash = hash;
+    return { attempted: true, ok: true, score };
   } catch(err){
     return { attempted: true, ok: false, error: err };
   } finally {
@@ -3945,14 +4005,20 @@ document.getElementById('googleSignInBtn').onclick = async () => {
     schedulePersist();
     setSyncStatus(true, 'Drive 同步已就緒');
     msg.style.color = '#4C7A3E';
-    msg.textContent = '連線成功。本機設定與寫作內容會依「自動同步」上傳到 Drive。';
-    pushVaultToDriveSilently().then(r => {
-      if(r.ok){
-        setLastDriveSync(Date.now());
-        setSyncStatus(true, 'Drive 同步已就緒');
-        msg.textContent = '連線成功，並已上傳目前資料（含設定）。';
-      }
-    });
+    msg.textContent = '連線成功。本機有內容且開啟自動同步時，才會上傳到 Drive。';
+    // 本機空白時不自動上傳，避免蓋掉雲端舊備份
+    if(stateContentScore(state) >= 10){
+      pushVaultToDriveSilently().then(r => {
+        if(r.ok){
+          setSyncStatus(true, 'Drive 同步已就緒');
+          msg.textContent = '連線成功，並已上傳目前資料（含設定）。';
+        } else if(r.reason === 'empty-local' || r.reason === 'shrink-guard'){
+          msg.textContent = '連線成功；本機內容過少，已跳過自動上傳以保護雲端備份。';
+        }
+      });
+    } else {
+      msg.textContent = '連線成功；本機幾乎空白，已跳過上傳以保護雲端既有備份。請先從 Drive 還原或匯入備份。';
+    }
   } catch(err){
     setSyncStatus(false, ever ? 'Drive 待命中' : '尚未連結 Google 帳號');
     msg.style.color = 'var(--vermillion)';
@@ -3966,14 +4032,22 @@ document.getElementById('driveUploadBtn').onclick = async () => {
   msg.style.color = 'var(--ink-faint)';
   msg.textContent = '上傳中…';
   try{
-    normalizeSettings();
-    const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
-    const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
-    await driveUploadVault(payload);
-    setLastDriveSync(Date.now());
-    setSyncStatus(true, '已連結 Google 帳號');
-    msg.style.color = '#4C7A3E';
-    msg.textContent = '已上傳到 Google Drive（含寫作內容與設定）';
+    const score = stateContentScore(state);
+    if(score < 10){
+      if(!confirm('目前本機幾乎沒有作品內容。若上傳會可能用空白備份蓋掉雲端舊檔，確定仍要上傳嗎？')){
+        msg.textContent = '已取消上傳';
+        return;
+      }
+    }
+    const result = await pushVaultToDriveSilently({ force: true });
+    if(result.ok){
+      setSyncStatus(true, 'Drive 同步已就緒');
+      msg.style.color = '#4C7A3E';
+      msg.textContent = '已上傳到 Google Drive（含寫作內容與設定）';
+    } else {
+      msg.style.color = 'var(--vermillion)';
+      msg.textContent = '上傳失敗：' + ((result.error && result.error.message) || '請再試一次');
+    }
   } catch(err){
     msg.style.color = 'var(--vermillion)';
     msg.textContent = '上傳失敗：' + ((err && err.message) || '請再試一次');
@@ -4063,7 +4137,7 @@ document.getElementById('driveDownloadBtn').onclick = async () => {
     setLastDriveSync(Date.now());
     showLibrary();
     schedulePersist();
-    setSyncStatus(true, '已連結 Google 帳號');
+    setSyncStatus(true, 'Drive 同步已就緒');
     msg.style.color = '#4C7A3E';
     msg.textContent = '已從 Drive 還原';
   } catch(err){
