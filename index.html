@@ -1773,7 +1773,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 22:40';
+const APP_BUILD = '2026-08-22 22:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3936,10 +3936,7 @@ document.addEventListener('input', e => {
   playKeySound();
 });
 
-// Service Worker 快取這幾輪一直是問題的根源（手機又沒有方便的手動清除入口），
-// 這裡先整個停用：不再註冊新的，並且主動清掉任何殘留的舊註冊與快取，
-// 讓頁面回到最單純、每次都直接跟網路要最新版本的狀態。等穩定下來、
-// 你確認不再有「看到舊版本」的狀況，之後可以再考慮重新加回離線／安裝功能。
+// 已停用 Service Worker（不再使用 sw.js）。若瀏覽器裡還有舊註冊／快取，啟動時清掉，避免看到舊版。
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(reg => reg.unregister());
