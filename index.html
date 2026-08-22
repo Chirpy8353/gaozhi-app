@@ -850,6 +850,9 @@
     border-top:1px dashed var(--line-soft); padding-top:14px; margin-top:14px;
   }
   .sync-section h4{ font-size:12.5px; color:var(--ink); margin:0 0 8px; }
+  .sync-section .sync-hint{
+    font-size:11px; color:var(--ink-faint); line-height:1.55; margin:0 0 10px;
+  }
   .sync-status{
     font-size:11.5px; color:var(--ink-faint); margin-bottom:10px;
     display:flex; align-items:center; gap:6px;
@@ -858,6 +861,19 @@
   .sync-status .dot{ width:6px; height:6px; border-radius:50%; background:var(--ink-faint); display:inline-block; }
   .sync-status.connected .dot{ background:#4C7A3E; }
   .sync-actions{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .sync-field{ margin-bottom:10px; }
+  .sync-field label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; }
+  .sync-field input[type="text"]{
+    width:100%; padding:8px 10px; font-size:12px; font-family:inherit;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    box-sizing:border-box;
+  }
+  .gate-drive-btn{
+    width:100%; margin-top:12px; padding:10px; background:transparent;
+    border:1px dashed var(--line); border-radius:var(--radius); color:var(--ink-soft);
+    font-size:12.5px; cursor:pointer; font-family:inherit;
+  }
+  .gate-drive-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
 
   /* ---------- Library (book list) ---------- */
   #library{
@@ -1261,6 +1277,9 @@
           <button type="submit" class="gate-submit">匯入並開始使用</button>
         </form>
       </div>
+
+      <button type="button" class="gate-drive-btn" id="gateRestoreDriveBtn">☁ 從 Google Drive 還原</button>
+      <div class="gate-error" id="gateDriveError" style="margin-top:8px;"></div>
     </div>
 
     <div id="gate-unlock" style="display:none;">
@@ -1633,10 +1652,26 @@
 
     <div class="sync-section">
       <h4>☁ 雲端同步（Google Drive）</h4>
+      <p class="sync-hint">
+        連結後可自動把加密備份上傳到你的 Drive（檔名 gaozhi-vault.json）。
+        需使用<strong>固定的 https 網址</strong>開啟本 App，並在 Google Cloud 把該網址加入「已授權的 JavaScript 來源」。
+        建議填入你自己的 OAuth Client ID（下方），預設測試 ID 可能隨時失效。
+      </p>
+      <div class="sync-field">
+        <label>Google OAuth Client ID（可選，建議自備）</label>
+        <input type="text" id="googleClientIdInput" placeholder="例如 xxxxx.apps.googleusercontent.com" autocomplete="off" />
+      </div>
+      <div class="setting-row" style="margin-bottom:10px;">
+        <span>自動同步到 Drive<small>本機保存後約 30 秒背景上傳；切換離開頁面時也會嘗試</small></span>
+        <label class="switch">
+          <input type="checkbox" id="toggleAutoSync" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
       <div class="sync-status" id="syncStatus">尚未連結 Google 帳號</div>
       <button class="backup-btn" id="googleSignInBtn">連結 Google 帳號</button>
       <div class="sync-actions" id="syncActions" style="display:none;">
-        <button class="backup-btn primary" id="driveUploadBtn">⬆ 上傳目前資料到 Drive</button>
+        <button class="backup-btn primary" id="driveUploadBtn">⬆ 立即上傳到 Drive</button>
         <button class="backup-btn" id="driveDownloadBtn">⬇ 從 Drive 下載並還原</button>
       </div>
       <div class="backup-msg" id="syncMsg"></div>
@@ -1650,7 +1685,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-21 20:40';
+const APP_BUILD = '2026-08-22 17:00';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -1698,12 +1733,13 @@ function currentBook(){
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 
 function normalizeSettings(){
-  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, sensitiveWords: [] };
+  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, sensitiveWords: [] };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
   if(typeof state.settings.googleConnected !== 'boolean') state.settings.googleConnected = false;
+  if(typeof state.settings.autoSync !== 'boolean') state.settings.autoSync = true;
   if(!Array.isArray(state.settings.sensitiveWords)) state.settings.sensitiveWords = [];
   if(!state.dailyLog) state.dailyLog = {};
   if(!state.trash) state.trash = [];
@@ -2477,15 +2513,20 @@ window.addEventListener('keydown', e => {
 });
 
 async function pushVaultToDriveSilently(){
-  if(!state.settings.googleConnected || !vaultKey) return { attempted: false };
+  if(!state || !state.settings || !state.settings.googleConnected || !vaultKey) return { attempted: false };
+  if(driveSyncInFlight) return { attempted: false };
+  driveSyncInFlight = true;
   try{
     await ensureGoogleToken();
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
     await driveUploadVault(payload);
+    setLastDriveSync(Date.now());
     return { attempted: true, ok: true };
   } catch(err){
     return { attempted: true, ok: false, error: err };
+  } finally {
+    driveSyncInFlight = false;
   }
 }
 
@@ -3142,6 +3183,7 @@ async function persistNow(){
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
     setAutosaveStatus('saved');
+    scheduleDriveSync();
   } catch(err){
     console.error('persist failed', err);
     setAutosaveStatus('error');
@@ -3157,7 +3199,13 @@ function schedulePersist(){
 }
 
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden) persistNow();
+  if(document.hidden){
+    persistNow();
+    // 離開頁面時若已連結且開了自動同步，盡量立刻上傳一次
+    if(state && state.settings && state.settings.googleConnected && state.settings.autoSync){
+      pushVaultToDriveSilently();
+    }
+  }
 });
 window.addEventListener('pagehide', () => { persistNow(); });
 
@@ -3212,6 +3260,51 @@ document.getElementById('setupForm').addEventListener('submit', async e => {
 
 document.getElementById('showImportPanel').onclick = () => {
   document.getElementById('importPanel').classList.toggle('open');
+};
+
+/** 本機無資料時：從 Google Drive 還原整份 vault */
+document.getElementById('gateRestoreDriveBtn').onclick = async () => {
+  const errEl = document.getElementById('gateDriveError');
+  errEl.textContent = '';
+  errEl.style.color = 'var(--vermillion)';
+  try{
+    errEl.style.color = 'var(--ink-faint)';
+    errEl.textContent = '正在連結 Google…';
+    await requestGoogleToken('consent');
+    errEl.textContent = '正在從 Drive 下載…';
+    const result = await driveDownloadVault();
+    if(!result || !result.data){
+      errEl.style.color = 'var(--vermillion)';
+      errEl.textContent = 'Drive 上還沒有備份檔。請先在有資料的裝置上連結 Google 並上傳一次。';
+      return;
+    }
+    const rec = result.data;
+    if(!rec.salt || !rec.iv || !rec.ciphertext){
+      errEl.style.color = 'var(--vermillion)';
+      errEl.textContent = 'Drive 上的檔案格式不正確。';
+      return;
+    }
+    const pw = await askPassword(
+      '請輸入備份密碼',
+      '請輸入當初設定／上傳這份 Drive 備份時使用的密碼。'
+    );
+    if(pw === null){ errEl.textContent = ''; return; }
+    errEl.textContent = '解密中…';
+    const key = await CryptoVault.deriveKey(pw, rec.salt);
+    const loaded = await CryptoVault.decryptJSON(key, rec.iv, rec.ciphertext);
+    if(!loaded.settings) loaded.settings = {};
+    loaded.settings.googleConnected = true;
+    if(typeof loaded.settings.autoSync !== 'boolean') loaded.settings.autoSync = true;
+    await VaultDB.set('vault', { salt: rec.salt, iv: rec.iv, ciphertext: rec.ciphertext, updatedAt: Date.now() });
+    vaultKey = key;
+    vaultSalt = rec.salt;
+    setLastDriveSync(Date.now());
+    enterApp(loaded);
+  } catch(err){
+    errEl.style.color = 'var(--vermillion)';
+    const detail = (err && (err.message || err.error)) || '還原失敗';
+    errEl.textContent = String(detail) + '（若是登入問題，請確認 Client ID 與目前 https 網址已在 Google Cloud 授權）';
+  }
 };
 
 document.getElementById('setupImportForm').addEventListener('submit', async e => {
@@ -3347,9 +3440,22 @@ function openSettingsModal(){
   normalizeSettings();
   document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
+  document.getElementById('toggleAutoSync').checked = !!(state.settings && state.settings.autoSync);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
+  try{
+    document.getElementById('googleClientIdInput').value = localStorage.getItem(LS_CLIENT_ID) || '';
+  } catch(e){
+    document.getElementById('googleClientIdInput').value = '';
+  }
+  document.getElementById('syncMsg').textContent = '';
   document.getElementById('settingsBackdrop').style.display = 'flex';
-  trySilentGoogleReconnect();
+  if(state.settings.googleConnected){
+    setSyncStatus(!!(gAccessToken && Date.now() < gTokenExpiresAt), 
+      (gAccessToken && Date.now() < gTokenExpiresAt) ? '已連結 Google 帳號' : '曾連結過，正在嘗試重新連結…');
+    trySilentGoogleReconnect();
+  } else {
+    setSyncStatus(false, '尚未連結 Google 帳號');
+  }
   const msg = document.getElementById('keySoundMsg');
   if(state.settings.keySound){
     if(keyClickBuffers.length > 0){
@@ -3616,30 +3722,79 @@ document.getElementById('trashBackdrop').addEventListener('click', e => {
 });
 
 /* ================= Google Drive sync ================= */
-const GOOGLE_CLIENT_ID = '360903377531-10ruh9tkpb35vbjbbgeto6ddivfou6b5.apps.googleusercontent.com';
+const DEFAULT_GOOGLE_CLIENT_ID = '360903377531-10ruh9tkpb35vbjbbgeto6ddivfou6b5.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_NAME = 'gaozhi-vault.json';
+const LS_CLIENT_ID = 'gaozhi_google_client_id';
+const LS_LAST_SYNC = 'gaozhi_last_drive_sync';
 
 let gTokenClient = null;
+let gTokenClientIdUsed = null;
 let gAccessToken = null;
 let gTokenExpiresAt = 0;
+let driveSyncTimer = null;
+let driveSyncInFlight = false;
+
+function getGoogleClientId(){
+  try{
+    const custom = (localStorage.getItem(LS_CLIENT_ID) || '').trim();
+    if(custom) return custom;
+  } catch(e){}
+  return DEFAULT_GOOGLE_CLIENT_ID;
+}
+
+function saveGoogleClientId(id){
+  try{
+    const v = (id || '').trim();
+    if(v) localStorage.setItem(LS_CLIENT_ID, v);
+    else localStorage.removeItem(LS_CLIENT_ID);
+  } catch(e){}
+  // Client ID 變更後必須重建 token client
+  gTokenClient = null;
+  gTokenClientIdUsed = null;
+  gAccessToken = null;
+  gTokenExpiresAt = 0;
+}
+
+function formatSyncTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+function setLastDriveSync(ts){
+  try{ localStorage.setItem(LS_LAST_SYNC, String(ts)); } catch(e){}
+}
+
+function getLastDriveSync(){
+  try{ return parseInt(localStorage.getItem(LS_LAST_SYNC) || '0', 10) || 0; } catch(e){ return 0; }
+}
 
 function setSyncStatus(connected, text){
   const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const last = getLastDriveSync();
+  const extra = last ? ` · 上次同步 ${formatSyncTime(last)}` : '';
   el.classList.toggle('connected', !!connected);
-  el.innerHTML = `<span class="dot"></span>${text}`;
-  document.getElementById('syncActions').style.display = connected ? 'flex' : 'none';
-  document.getElementById('googleSignInBtn').textContent = connected ? '重新連結 Google 帳號' : '連結 Google 帳號';
+  el.innerHTML = `<span class="dot"></span>${text}${connected ? extra : ''}`;
+  const actions = document.getElementById('syncActions');
+  if(actions) actions.style.display = connected ? 'flex' : 'none';
+  const btn = document.getElementById('googleSignInBtn');
+  if(btn) btn.textContent = connected ? '重新連結 Google 帳號' : '連結 Google 帳號';
 }
 
 function initGoogleAuth(){
-  if(gTokenClient) return true;
   if(!window.google || !window.google.accounts || !window.google.accounts.oauth2) return false;
+  const cid = getGoogleClientId();
+  if(gTokenClient && gTokenClientIdUsed === cid) return true;
   gTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
+    client_id: cid,
     scope: DRIVE_SCOPE,
-    callback: () => {} // 個別請求時會覆寫這個 callback
+    callback: () => {}
   });
+  gTokenClientIdUsed = cid;
   return true;
 }
 
@@ -3707,27 +3862,38 @@ async function driveDownloadVault(){
   return { data: await res.json(), modifiedTime: existing.modifiedTime };
 }
 
+function scheduleDriveSync(){
+  if(!state || !state.settings || !state.settings.googleConnected || !state.settings.autoSync || !vaultKey) return;
+  clearTimeout(driveSyncTimer);
+  driveSyncTimer = setTimeout(() => { pushVaultToDriveSilently(); }, 30000);
+}
+
 async function trySilentGoogleReconnect(){
-  if(!state.settings.googleConnected) return;
+  if(!state || !state.settings || !state.settings.googleConnected) return;
   if(gAccessToken && Date.now() < gTokenExpiresAt){
     setSyncStatus(true, '已連結 Google 帳號');
     return;
   }
   const msg = document.getElementById('syncMsg');
   setSyncStatus(false, '重新連結中…');
-  msg.textContent = '';
+  if(msg) msg.textContent = '';
   try{
     await requestGoogleToken('');
     setSyncStatus(true, '已連結 Google 帳號');
   } catch(err){
     setSyncStatus(false, '尚未連結 Google 帳號');
-    msg.style.color = 'var(--ink-faint)';
-    msg.textContent = '自動重新連結未成功，需要時請手動點「連結 Google 帳號」';
+    if(msg){
+      msg.style.color = 'var(--ink-faint)';
+      msg.textContent = '自動重新連結未成功，需要時請手動點「連結 Google 帳號」';
+    }
   }
 }
 
 document.getElementById('googleSignInBtn').onclick = async () => {
   const msg = document.getElementById('syncMsg');
+  // 先存下使用者填的 Client ID
+  const input = document.getElementById('googleClientIdInput');
+  if(input) saveGoogleClientId(input.value);
   msg.style.color = 'var(--ink-faint)';
   msg.textContent = '連結中…';
   try{
@@ -3736,11 +3902,20 @@ document.getElementById('googleSignInBtn').onclick = async () => {
     schedulePersist();
     setSyncStatus(true, '已連結 Google 帳號');
     msg.style.color = '#4C7A3E';
-    msg.textContent = '連結成功';
+    msg.textContent = '連結成功。之後本機保存會在背景自動同步（若已開啟自動同步）。';
+    // 連結成功後立刻上傳一次
+    pushVaultToDriveSilently().then(r => {
+      if(r.ok){
+        setLastDriveSync(Date.now());
+        setSyncStatus(true, '已連結 Google 帳號');
+        msg.textContent = '連結成功，並已上傳目前資料到 Drive。';
+      }
+    });
   } catch(err){
     setSyncStatus(false, '尚未連結 Google 帳號');
     msg.style.color = 'var(--vermillion)';
-    msg.textContent = (err && err.message) || 'Google 登入失敗，請再試一次';
+    const detail = (err && (err.message || err.error)) || 'Google 登入失敗，請再試一次';
+    msg.textContent = String(detail) + '（請確認 Client ID 與目前網址已加入 Google Cloud 授權來源）';
   }
 };
 
@@ -3752,6 +3927,8 @@ document.getElementById('driveUploadBtn').onclick = async () => {
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
     await driveUploadVault(payload);
+    setLastDriveSync(Date.now());
+    setSyncStatus(true, '已連結 Google 帳號');
     msg.style.color = '#4C7A3E';
     msg.textContent = '已上傳到 Google Drive';
   } catch(err){
@@ -3759,6 +3936,17 @@ document.getElementById('driveUploadBtn').onclick = async () => {
     msg.textContent = '上傳失敗：' + ((err && err.message) || '請再試一次');
   }
 };
+
+document.getElementById('toggleAutoSync').addEventListener('change', e => {
+  if(!state) return;
+  state.settings.autoSync = !!e.target.checked;
+  schedulePersist();
+  if(state.settings.autoSync && state.settings.googleConnected) scheduleDriveSync();
+});
+
+document.getElementById('googleClientIdInput').addEventListener('change', e => {
+  saveGoogleClientId(e.target.value);
+});
 
 /** 用有遮罩的密碼彈窗取代 window.prompt（原生 prompt 永遠是明文） */
 function askPassword(title, subtitle){
@@ -3827,9 +4015,12 @@ document.getElementById('driveDownloadBtn').onclick = async () => {
     }
     state = loaded;
     normalizeSettings();
+    state.settings.googleConnected = true;
     undoStack = []; redoStack = []; pendingSnapshot = null;
+    setLastDriveSync(Date.now());
     showLibrary();
     schedulePersist();
+    setSyncStatus(true, '已連結 Google 帳號');
     msg.style.color = '#4C7A3E';
     msg.textContent = '已從 Drive 還原';
   } catch(err){
