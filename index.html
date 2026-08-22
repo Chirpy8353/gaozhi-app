@@ -1653,16 +1653,14 @@
     <div class="sync-section">
       <h4>☁ 雲端同步（Google Drive）</h4>
       <p class="sync-hint">
-        連結後可自動把加密備份上傳到你的 Drive（檔名 gaozhi-vault.json）。
-        需使用<strong>固定的 https 網址</strong>開啟本 App，並在 Google Cloud 把該網址加入「已授權的 JavaScript 來源」。
-        建議填入你自己的 OAuth Client ID（下方），預設測試 ID 可能隨時失效。
+        連結後，作品、章節與<strong>所有設定</strong>（稿紙格線、鍵盤音效、每日目標、自動同步等）會一併加密上傳為
+        <code>gaozhi-vault.json</code>。請固定使用
+        <strong>https://chirpy8353.github.io/gaozhi-app/</strong>。
+        換裝置本機若是空的，可在啟動畫面選「從 Google Drive 還原」。
+        重新整理後若顯示未連結，再點一次「連結」即可（設定不必重設）。
       </p>
-      <div class="sync-field">
-        <label>Google OAuth Client ID（可選，建議自備）</label>
-        <input type="text" id="googleClientIdInput" placeholder="例如 xxxxx.apps.googleusercontent.com" autocomplete="off" />
-      </div>
       <div class="setting-row" style="margin-bottom:10px;">
-        <span>自動同步到 Drive<small>本機保存後約 30 秒背景上傳；切換離開頁面時也會嘗試</small></span>
+        <span>自動同步到 Drive<small>含寫作內容與設定；保存後約 5 秒上傳，離開頁面也會再試</small></span>
         <label class="switch">
           <input type="checkbox" id="toggleAutoSync" />
           <span class="switch-track"></span>
@@ -1675,6 +1673,14 @@
         <button class="backup-btn" id="driveDownloadBtn">⬇ 從 Drive 下載並還原</button>
       </div>
       <div class="backup-msg" id="syncMsg"></div>
+      <details style="margin-top:10px; font-size:11.5px; color:var(--ink-faint);">
+        <summary style="cursor:pointer; color:var(--ink-soft);">進階：OAuth Client ID</summary>
+        <p class="sync-hint" style="margin-top:8px;">本站已寫入預設 ID，一般使用不必改。僅在改用自己的 Google Cloud 專案時再填。</p>
+        <div class="sync-field">
+          <label>Google OAuth Client ID</label>
+          <input type="text" id="googleClientIdInput" placeholder="xxxxx.apps.googleusercontent.com" autocomplete="off" />
+        </div>
+      </details>
     </div>
 
     <div id="appVersionTag"></div>
@@ -1685,7 +1691,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 17:00';
+const APP_BUILD = '2026-08-22 20:10';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2517,6 +2523,7 @@ async function pushVaultToDriveSilently(){
   if(driveSyncInFlight) return { attempted: false };
   driveSyncInFlight = true;
   try{
+    normalizeSettings(); // 確保設定欄位齊全後再加密上傳
     await ensureGoogleToken();
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
@@ -3226,8 +3233,13 @@ function enterApp(loadedState){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
   undoStack = []; redoStack = []; pendingSnapshot = null;
+  // 套用已同步回來的介面設定
+  try{
+    document.getElementById('rows').classList.toggle('grid-mode', !!state.settings.gridBg);
+  } catch(e){}
   if(state.settings.keySound) loadKeyClickBuffers();
   showLibrary();
+  if(state.settings.googleConnected && state.settings.autoSync) scheduleDriveSync();
 }
 
 async function boot(){
@@ -3443,9 +3455,9 @@ function openSettingsModal(){
   document.getElementById('toggleAutoSync').checked = !!(state.settings && state.settings.autoSync);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   try{
-    document.getElementById('googleClientIdInput').value = localStorage.getItem(LS_CLIENT_ID) || '';
+    document.getElementById('googleClientIdInput').value = localStorage.getItem(LS_CLIENT_ID) || DEFAULT_GOOGLE_CLIENT_ID;
   } catch(e){
-    document.getElementById('googleClientIdInput').value = '';
+    document.getElementById('googleClientIdInput').value = DEFAULT_GOOGLE_CLIENT_ID;
   }
   document.getElementById('syncMsg').textContent = '';
   document.getElementById('settingsBackdrop').style.display = 'flex';
@@ -3865,7 +3877,8 @@ async function driveDownloadVault(){
 function scheduleDriveSync(){
   if(!state || !state.settings || !state.settings.googleConnected || !state.settings.autoSync || !vaultKey) return;
   clearTimeout(driveSyncTimer);
-  driveSyncTimer = setTimeout(() => { pushVaultToDriveSilently(); }, 30000);
+  // 5 秒：設定改動也能較快進雲端，又不會每個按鍵都打 Drive
+  driveSyncTimer = setTimeout(() => { pushVaultToDriveSilently(); }, 5000);
 }
 
 async function trySilentGoogleReconnect(){
@@ -3924,13 +3937,14 @@ document.getElementById('driveUploadBtn').onclick = async () => {
   msg.style.color = 'var(--ink-faint)';
   msg.textContent = '上傳中…';
   try{
+    normalizeSettings();
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     const payload = { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now(), app: 'gaozhi', version: 1 };
     await driveUploadVault(payload);
     setLastDriveSync(Date.now());
     setSyncStatus(true, '已連結 Google 帳號');
     msg.style.color = '#4C7A3E';
-    msg.textContent = '已上傳到 Google Drive';
+    msg.textContent = '已上傳到 Google Drive（含寫作內容與設定）';
   } catch(err){
     msg.style.color = 'var(--vermillion)';
     msg.textContent = '上傳失敗：' + ((err && err.message) || '請再試一次');
