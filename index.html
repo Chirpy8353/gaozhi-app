@@ -1691,7 +1691,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 20:10';
+const APP_BUILD = '2026-08-22 20:20';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3239,7 +3239,12 @@ function enterApp(loadedState){
   } catch(e){}
   if(state.settings.keySound) loadKeyClickBuffers();
   showLibrary();
-  if(state.settings.googleConnected && state.settings.autoSync) scheduleDriveSync();
+  if(state.settings.googleConnected){
+    // 進入 App 後背景恢復 Drive token，不必等使用者打開設定
+    trySilentGoogleReconnect().then(ok => {
+      if(ok && state.settings.autoSync) scheduleDriveSync();
+    });
+  }
 }
 
 async function boot(){
@@ -3462,9 +3467,13 @@ function openSettingsModal(){
   document.getElementById('syncMsg').textContent = '';
   document.getElementById('settingsBackdrop').style.display = 'flex';
   if(state.settings.googleConnected){
-    setSyncStatus(!!(gAccessToken && Date.now() < gTokenExpiresAt), 
-      (gAccessToken && Date.now() < gTokenExpiresAt) ? '已連結 Google 帳號' : '曾連結過，正在嘗試重新連結…');
-    trySilentGoogleReconnect();
+    if(isDriveTokenLive()){
+      setSyncStatus(true, 'Drive 同步已就緒');
+    } else {
+      // 開設定時：有 token 就直接顯示就緒；沒有則背景靜默嘗試，失敗也不當成「要重新登録」
+      setSyncStatus(false, 'Drive 待命中');
+      trySilentGoogleReconnect();
+    }
   } else {
     setSyncStatus(false, '尚未連結 Google 帳號');
   }
@@ -3784,17 +3793,27 @@ function getLastDriveSync(){
   try{ return parseInt(localStorage.getItem(LS_LAST_SYNC) || '0', 10) || 0; } catch(e){ return 0; }
 }
 
-function setSyncStatus(connected, text){
+function isDriveTokenLive(){
+  return !!(gAccessToken && Date.now() < gTokenExpiresAt);
+}
+
+function setSyncStatus(tokenLive, text){
   const el = document.getElementById('syncStatus');
   if(!el) return;
+  const ever = !!(state && state.settings && state.settings.googleConnected);
   const last = getLastDriveSync();
-  const extra = last ? ` · 上次同步 ${formatSyncTime(last)}` : '';
-  el.classList.toggle('connected', !!connected);
-  el.innerHTML = `<span class="dot"></span>${text}${connected ? extra : ''}`;
+  const extra = (tokenLive && last) ? ` · 上次同步 ${formatSyncTime(last)}` : (last ? ` · 上次同步 ${formatSyncTime(last)}` : '');
+  el.classList.toggle('connected', !!tokenLive);
+  el.innerHTML = `<span class="dot"></span>${text}${extra}`;
+  // 只要曾經授權過，就顯示上傳／下載按鈕（token 過期時點上傳會再要一次授權，不必先「重新登録」）
   const actions = document.getElementById('syncActions');
-  if(actions) actions.style.display = connected ? 'flex' : 'none';
+  if(actions) actions.style.display = (tokenLive || ever) ? 'flex' : 'none';
   const btn = document.getElementById('googleSignInBtn');
-  if(btn) btn.textContent = connected ? '重新連結 Google 帳號' : '連結 Google 帳號';
+  if(btn){
+    if(tokenLive) btn.textContent = '重新授權（通常不必）';
+    else if(ever) btn.textContent = '恢復 Drive 連線';
+    else btn.textContent = '連結 Google 帳號';
+  }
 }
 
 function initGoogleAuth(){
@@ -3882,53 +3901,63 @@ function scheduleDriveSync(){
 }
 
 async function trySilentGoogleReconnect(){
-  if(!state || !state.settings || !state.settings.googleConnected) return;
-  if(gAccessToken && Date.now() < gTokenExpiresAt){
-    setSyncStatus(true, '已連結 Google 帳號');
-    return;
+  if(!state || !state.settings || !state.settings.googleConnected) return false;
+  if(isDriveTokenLive()){
+    setSyncStatus(true, 'Drive 同步已就緒');
+    return true;
   }
-  const msg = document.getElementById('syncMsg');
-  setSyncStatus(false, '重新連結中…');
-  if(msg) msg.textContent = '';
+  // 不把狀態打成「尚未連結」，避免每次開設定都像要重新登録
+  setSyncStatus(false, 'Drive 連線恢復中（背景）…');
   try{
-    await requestGoogleToken('');
-    setSyncStatus(true, '已連結 Google 帳號');
+    await requestGoogleToken(''); // 空 prompt：曾授權過應盡量不彈完整同意畫面
+    setSyncStatus(true, 'Drive 同步已就緒');
+    return true;
   } catch(err){
-    setSyncStatus(false, '尚未連結 Google 帳號');
-    if(msg){
+    setSyncStatus(false, 'Drive 待命中（上傳時會自動要一次授權）');
+    const msg = document.getElementById('syncMsg');
+    if(msg && document.getElementById('settingsBackdrop').style.display === 'flex'){
       msg.style.color = 'var(--ink-faint)';
-      msg.textContent = '自動重新連結未成功，需要時請手動點「連結 Google 帳號」';
+      msg.textContent = '瀏覽器暫時沒有可用的 Google 連線。這不影響本機設定；需要同步時點「恢復 Drive 連線」或「立即上傳」即可。';
     }
+    return false;
   }
 }
 
 document.getElementById('googleSignInBtn').onclick = async () => {
   const msg = document.getElementById('syncMsg');
-  // 先存下使用者填的 Client ID
   const input = document.getElementById('googleClientIdInput');
   if(input) saveGoogleClientId(input.value);
   msg.style.color = 'var(--ink-faint)';
-  msg.textContent = '連結中…';
+  msg.textContent = '連線中…';
+  const ever = !!(state && state.settings && state.settings.googleConnected);
   try{
-    await requestGoogleToken('consent');
+    // 已授權過：優先靜默；失敗再明示同意。首次才直接 consent。
+    if(ever){
+      try{
+        await requestGoogleToken('');
+      } catch(e){
+        await requestGoogleToken('consent');
+      }
+    } else {
+      await requestGoogleToken('consent');
+    }
     state.settings.googleConnected = true;
     schedulePersist();
-    setSyncStatus(true, '已連結 Google 帳號');
+    setSyncStatus(true, 'Drive 同步已就緒');
     msg.style.color = '#4C7A3E';
-    msg.textContent = '連結成功。之後本機保存會在背景自動同步（若已開啟自動同步）。';
-    // 連結成功後立刻上傳一次
+    msg.textContent = '連線成功。本機設定與寫作內容會依「自動同步」上傳到 Drive。';
     pushVaultToDriveSilently().then(r => {
       if(r.ok){
         setLastDriveSync(Date.now());
-        setSyncStatus(true, '已連結 Google 帳號');
-        msg.textContent = '連結成功，並已上傳目前資料到 Drive。';
+        setSyncStatus(true, 'Drive 同步已就緒');
+        msg.textContent = '連線成功，並已上傳目前資料（含設定）。';
       }
     });
   } catch(err){
-    setSyncStatus(false, '尚未連結 Google 帳號');
+    setSyncStatus(false, ever ? 'Drive 待命中' : '尚未連結 Google 帳號');
     msg.style.color = 'var(--vermillion)';
     const detail = (err && (err.message || err.error)) || 'Google 登入失敗，請再試一次';
-    msg.textContent = String(detail) + '（請確認 Client ID 與目前網址已加入 Google Cloud 授權來源）';
+    msg.textContent = String(detail) + '（請確認網址已加入 Google Cloud「已授權的 JavaScript 來源」）';
   }
 };
 
