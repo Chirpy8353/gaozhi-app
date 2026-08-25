@@ -1003,33 +1003,47 @@
   }
 
   /* ---------- Trash modal ---------- */
-  #trashBackdrop{
-    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
-    z-index:50; align-items:center; justify-content:center;
+  /* ---------- Trash page (full page, list) ---------- */
+  #trashPage{
+    display:none; flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding: 40px 56px; max-width:960px; margin:0 auto; width:100%;
   }
-  #trashModal{
-    background:var(--paper); border:1px solid var(--line); border-radius:6px;
-    width:400px; max-height:80vh; overflow-y:auto; padding:22px;
+  #trashPage .library-header{ margin-bottom:16px; }
+  .trash-tabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .trash-tab{
+    font-family:inherit; font-size:12.5px; padding:6px 14px; border-radius:999px; cursor:pointer;
+    border:1px solid var(--line); background:var(--white); color:var(--ink-soft);
   }
-  #trashModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 4px; }
-  #trashModal .ov-sub{ color:var(--ink-faint); font-size:11.5px; margin-bottom:16px; }
-  .trash-item{
-    display:flex; align-items:center; gap:10px;
-    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
-    padding:10px 12px; margin-bottom:8px;
+  .trash-tab.active{ border-color:var(--vermillion); color:var(--vermillion); background:var(--vermillion-bg); }
+  #trashSearchInput{
+    width:100%; box-sizing:border-box; font-family:inherit; font-size:13px; padding:9px 12px;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+    margin-bottom:6px;
   }
-  .trash-item-info{ flex:1; min-width:0; }
-  .trash-item-title{ font-family:"Noto Serif SC", serif; font-size:13.5px; color:var(--ink); }
-  .trash-item-meta{ font-size:10.5px; color:var(--ink-faint); margin-top:2px; }
-  .trash-item-actions{ display:flex; gap:6px; flex-shrink:0; }
-  .trash-item-actions button{
+  .trash-search-hint{ font-size:11px; color:var(--ink-faint); margin-bottom:14px; line-height:1.5; }
+  .trash-list-row{
+    display:flex; align-items:center; gap:12px;
+    border-bottom:1px solid var(--line-soft); padding:12px 4px;
+  }
+  .trash-list-row:hover{ background:rgba(0,0,0,0.02); }
+  .trash-list-main{ flex:1; min-width:0; }
+  .trash-list-title{ font-family:"Noto Serif SC", serif; font-size:14px; color:var(--ink); }
+  .trash-list-meta{ font-size:11px; color:var(--ink-faint); margin-top:3px; }
+  .trash-drawer-tag{
+    display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; margin-right:6px;
+    border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .trash-drawer-tag.recent{ border-color:#B9D1AC; color:#4C7A3E; background:#E5EEDF; }
+  .trash-drawer-tag.older{ border-color:#E4C3B6; color:var(--vermillion); background:var(--vermillion-bg); }
+  .trash-list-tags{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .trash-list-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .trash-list-actions button{
     font-family:inherit; font-size:11px; padding:5px 10px; border-radius:var(--radius); cursor:pointer;
     border:1px solid var(--line); background:transparent; color:var(--ink-soft);
   }
-  .trash-item-actions button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
-  #trashCloseBtn{
-    width:100%; margin-top:10px; padding:8px; background:transparent; border:1px solid var(--line);
-    color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
+  .trash-list-actions button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  @media (max-width: 700px){
+    #trashPage{ padding:20px 16px; }
   }
 
   /* ---------- Book info modal ---------- */
@@ -1268,7 +1282,7 @@
     .book-card{ width:100%; height:auto; min-height:150px; padding:14px; }
 
     /* 彈窗寬度限制在螢幕內，避免溢出 */
-    #settingsModal, #backupModal, #exportModal, #statsModal, #trashModal{
+    #settingsModal, #backupModal, #exportModal, #statsModal{
       width:92vw !important; max-width:92vw; padding:16px;
     }
 
@@ -1433,14 +1447,24 @@
   </div>
 </div>
 
-<div id="trashBackdrop">
-  <div id="trashModal">
-    <h3>回收箱</h3>
-    <div class="ov-sub" id="trashRetentionHint">廢稿一律保留，不會自動刪除。依刪除時間分成「近期」與「更早」；可搜尋書名與正文／備註。</div>
-    <input type="text" id="trashSearchInput" placeholder="搜尋回收箱（書名、正文、備註）…" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink); margin-bottom:12px;" />
-    <div id="trashList"></div>
-    <button id="trashCloseBtn">關閉</button>
+<div id="trashPage">
+  <div class="library-header">
+    <div>
+      <h1>回收箱</h1>
+      <div class="subtitle" id="trashRetentionHint">廢稿一律保留，不會自動刪除</div>
+    </div>
+    <div class="library-header-actions">
+      <button class="lib-icon-btn" id="trashBackBtn">← 回書架</button>
+    </div>
   </div>
+  <div class="trash-tabs">
+    <button type="button" class="trash-tab active" data-trash-tab="all">全部</button>
+    <button type="button" class="trash-tab" data-trash-tab="recent">近期</button>
+    <button type="button" class="trash-tab" data-trash-tab="older">更早</button>
+  </div>
+  <input type="text" id="trashSearchInput" placeholder="搜尋：書名／正文；標籤請用 #短篇" />
+  <div class="trash-search-hint">搜「短篇」查標題與內文；搜「#短篇」只查標籤。搜尋會跨近期與更早，結果會標明所在抽屜。</div>
+  <div id="trashList"></div>
 </div>
 
 <div id="wordCheckBackdrop">
@@ -1778,7 +1802,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-25 09:55';
+const APP_BUILD = '2026-08-25 10:10';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -1857,21 +1881,39 @@ function purgeOldTrash(){
   return false;
 }
 
-function bookMatchesTrashQuery(book, q){
-  if(!q) return true;
-  const lower = q.toLowerCase();
-  if((book.title || '').toLowerCase().indexOf(lower) !== -1) return true;
-  if((book.synopsis || '').toLowerCase().indexOf(lower) !== -1) return true;
-  if((book.tags || '').toLowerCase().indexOf(lower) !== -1) return true;
+/** 解析回收箱搜尋：#xxx → 只比對標籤；否則書名／簡介／章節／正文／備註 */
+function parseTrashSearchQuery(raw){
+  const q = (raw || '').trim();
+  if(!q) return { mode: 'all', term: '' };
+  if(q.charAt(0) === '#'){
+    return { mode: 'tag', term: q.slice(1).trim().toLowerCase() };
+  }
+  return { mode: 'text', term: q.toLowerCase() };
+}
+
+function bookTagList(book){
+  const raw = book.tags || '';
+  if(Array.isArray(raw)) return raw.map(t => String(t).trim()).filter(Boolean);
+  return String(raw).split(/[,，、\s]+/).map(t => t.trim()).filter(Boolean);
+}
+
+function bookMatchesTrashQuery(book, rawQuery){
+  const { mode, term } = parseTrashSearchQuery(rawQuery);
+  if(!term) return true;
+  if(mode === 'tag'){
+    return bookTagList(book).some(t => t.toLowerCase().indexOf(term) !== -1);
+  }
+  if((book.title || '').toLowerCase().indexOf(term) !== -1) return true;
+  if((book.synopsis || '').toLowerCase().indexOf(term) !== -1) return true;
   const chapters = book.chapters || [];
   for(let i = 0; i < chapters.length; i++){
     const ch = chapters[i];
-    if((ch.title || '').toLowerCase().indexOf(lower) !== -1) return true;
+    if((ch.title || '').toLowerCase().indexOf(term) !== -1) return true;
     const sections = ch.sections || [];
     for(let j = 0; j < sections.length; j++){
       const sec = sections[j];
-      if((sec.text || '').toLowerCase().indexOf(lower) !== -1) return true;
-      if((sec.note || '').toLowerCase().indexOf(lower) !== -1) return true;
+      if((sec.text || '').toLowerCase().indexOf(term) !== -1) return true;
+      if((sec.note || '').toLowerCase().indexOf(term) !== -1) return true;
     }
   }
   return false;
@@ -2332,9 +2374,18 @@ function bookWordTotal(book){
 function showLibrary(){
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
+  document.getElementById('trashPage').style.display = 'none';
   document.getElementById('library').style.display = 'block';
   state.currentBookId = null;
   renderLibrary();
+}
+
+function showTrashPage(){
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('library').style.display = 'none';
+  document.getElementById('trashPage').style.display = 'block';
+  renderTrash();
 }
 
 function openBook(id){
@@ -4012,104 +4063,99 @@ document.getElementById('calNextBtn').onclick = () => {
   renderCalendar();
 };
 
-/* ---------------- trash (recycle bin) ---------------- */
-function appendTrashItem(list, book, recentDays){
-  const ageMs = Date.now() - (book.deletedAt || 0);
-  const ageDays = Math.max(0, Math.floor(ageMs / 86400000));
+/* ---------------- trash (full page, list) ---------------- */
+let trashTab = 'all'; // all | recent | older
+
+function isTrashRecent(book){
+  return (Date.now() - (book.deletedAt || 0)) < getTrashRecentMs();
+}
+
+function appendTrashListRow(list, book, drawer){
+  const ageDays = Math.max(0, Math.floor((Date.now() - (book.deletedAt || 0)) / 86400000));
   const when = book.deletedAt ? formatSyncTime(book.deletedAt) : '—';
-  const item = document.createElement('div');
-  item.className = 'trash-item';
-  item.innerHTML = `
-    <div class="trash-item-info">
-      <div class="trash-item-title">${escapeHtml(book.title)}</div>
-      <div class="trash-item-meta">${bookWordTotal(book)} 字 · 刪於 ${when} · 已 ${ageDays} 天</div>
+  const tags = bookTagList(book);
+  const tagStr = tags.length ? tags.map(t => '#' + t).join(' ') : '';
+  const drawerLabel = drawer === 'recent' ? '近期' : '更早';
+  const drawerClass = drawer === 'recent' ? 'recent' : 'older';
+  const row = document.createElement('div');
+  row.className = 'trash-list-row';
+  row.innerHTML = `
+    <div class="trash-list-main">
+      <div class="trash-list-title">${escapeHtml(book.title || '未命名')}</div>
+      <div class="trash-list-meta">
+        <span class="trash-drawer-tag ${drawerClass}">${drawerLabel}</span>
+        ${bookWordTotal(book)} 字 · 刪於 ${when} · 已 ${ageDays} 天
+      </div>
+      ${tagStr ? `<div class="trash-list-tags">${escapeHtml(tagStr)}</div>` : ''}
     </div>
-    <div class="trash-item-actions">
+    <div class="trash-list-actions">
       <button data-restore>還原</button>
       <button data-purge>永久刪除</button>
     </div>
   `;
-  item.querySelector('[data-restore]').onclick = () => {
+  row.querySelector('[data-restore]').onclick = () => {
     state.trash = state.trash.filter(b => b.id !== book.id);
     delete book.deletedAt;
     book.updatedAt = Date.now();
     state.books.push(book);
     schedulePersist();
     renderTrash();
-    renderLibrary();
   };
-  item.querySelector('[data-purge]').onclick = () => {
+  row.querySelector('[data-purge]').onclick = () => {
     if(!confirm(`確定要永久刪除「${book.title}」嗎？這次真的無法復原。`)) return;
     state.trash = state.trash.filter(b => b.id !== book.id);
     schedulePersist();
     renderTrash();
   };
-  list.appendChild(item);
+  list.appendChild(row);
 }
 
 function renderTrash(){
   const list = document.getElementById('trashList');
   if(!state.trash) state.trash = [];
   const recentDays = getTrashRecentDays();
-  const recentMs = getTrashRecentMs();
   const hint = document.getElementById('trashRetentionHint');
   if(hint){
-    hint.textContent = `廢稿一律保留，不會自動刪除。近 ${recentDays} 天為「近期」，更早為「更早」；可搜尋書名與正文／備註。`;
+    hint.textContent = `廢稿一律保留。近 ${recentDays} 天為「近期」，其餘為「更早」。`;
   }
-  const q = (document.getElementById('trashSearchInput') && document.getElementById('trashSearchInput').value || '').trim();
-  const filtered = state.trash.filter(b => bookMatchesTrashQuery(b, q));
+  document.querySelectorAll('.trash-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.trashTab === trashTab);
+  });
+  const q = (document.getElementById('trashSearchInput') && document.getElementById('trashSearchInput').value) || '';
+  const matched = state.trash.filter(b => bookMatchesTrashQuery(b, q));
+  let rows = matched;
+  if(trashTab === 'recent') rows = matched.filter(isTrashRecent);
+  else if(trashTab === 'older') rows = matched.filter(b => !isTrashRecent(b));
+  rows = [...rows].sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+
   if(state.trash.length === 0){
     list.innerHTML = '<div class="lib-empty">回收箱是空的</div>';
     return;
   }
-  if(filtered.length === 0){
-    list.innerHTML = '<div class="lib-empty">沒有符合搜尋的廢稿</div>';
+  if(rows.length === 0){
+    list.innerHTML = '<div class="lib-empty">這個抽屜裡沒有符合的項目</div>';
     return;
   }
-  const now = Date.now();
-  const recent = filtered.filter(b => (now - (b.deletedAt || 0)) < recentMs)
-    .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
-  const older = filtered.filter(b => (now - (b.deletedAt || 0)) >= recentMs)
-    .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
   list.innerHTML = '';
-  const addSection = (title, books) => {
-    const head = document.createElement('div');
-    head.style.cssText = 'font-size:12px; color:var(--ink-soft); margin:12px 0 8px; font-weight:600;';
-    head.textContent = `${title}（${books.length}）`;
-    list.appendChild(head);
-    if(books.length === 0){
-      const empty = document.createElement('div');
-      empty.className = 'lib-empty';
-      empty.style.padding = '12px 0';
-      empty.textContent = '無';
-      list.appendChild(empty);
-      return;
-    }
-    books.forEach(book => appendTrashItem(list, book, recentDays));
-  };
-  addSection(`近期（${recentDays} 天內）`, recent);
-  addSection(`更早（超過 ${recentDays} 天）`, older);
+  rows.forEach(book => appendTrashListRow(list, book, isTrashRecent(book) ? 'recent' : 'older'));
 }
 
 document.getElementById('openTrashBtn').onclick = () => {
+  trashTab = 'all';
   const input = document.getElementById('trashSearchInput');
   if(input) input.value = '';
-  renderTrash();
-  document.getElementById('trashBackdrop').style.display = 'flex';
+  showTrashPage();
 };
+document.getElementById('trashBackBtn').onclick = () => showLibrary();
 document.getElementById('trashSearchInput').addEventListener('input', () => {
   clearTimeout(window._trashSearchTimer);
   window._trashSearchTimer = setTimeout(() => renderTrash(), 150);
 });
-document.getElementById('trashCloseBtn').onclick = () => {
-  document.getElementById('trashBackdrop').style.display = 'none';
-  renderLibrary();
-};
-document.getElementById('trashBackdrop').addEventListener('click', e => {
-  if(e.target.id === 'trashBackdrop'){
-    document.getElementById('trashBackdrop').style.display = 'none';
-    renderLibrary();
-  }
+document.querySelectorAll('.trash-tab').forEach(btn => {
+  btn.onclick = () => {
+    trashTab = btn.dataset.trashTab || 'all';
+    renderTrash();
+  };
 });
 
 /* ================= Google Drive sync ================= */
