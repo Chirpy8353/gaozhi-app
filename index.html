@@ -1436,7 +1436,8 @@
 <div id="trashBackdrop">
   <div id="trashModal">
     <h3>回收箱</h3>
-    <div class="ov-sub">刪除的作品會先保留 30 天，超過後才會自動永久清除</div>
+    <div class="ov-sub" id="trashRetentionHint">廢稿一律保留，不會自動刪除。依刪除時間分成「近期」與「更早」；可搜尋書名與正文／備註。</div>
+    <input type="text" id="trashSearchInput" placeholder="搜尋回收箱（書名、正文、備註）…" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink); margin-bottom:12px;" />
     <div id="trashList"></div>
     <button id="trashCloseBtn">關閉</button>
   </div>
@@ -1731,6 +1732,10 @@
       <span>每日字數目標<small>用於「今日概覽」的完成度計算</small></span>
       <input type="number" id="dailyGoalInput" min="1" step="100" style="width:80px; padding:6px 8px; font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); color:var(--ink); text-align:right;" />
     </div>
+    <div class="setting-row">
+      <span>回收箱「近期」分界<small>僅用來分組顯示，不會自動刪除。預設 30 天</small></span>
+      <input type="number" id="trashRetentionInput" min="1" max="3650" step="1" style="width:80px; padding:6px 8px; font-family:inherit; font-size:13px; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); color:var(--ink); text-align:right;" />
+    </div>
 
     <div class="sync-section">
       <h4>☁ 雲端同步（Google Drive）</h4>
@@ -1773,7 +1778,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-22 22:50';
+const APP_BUILD = '2026-08-25 09:55';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -1818,27 +1823,58 @@ function currentBook(){
   return state.books.find(b => b.id === state.currentBookId);
 }
 
-const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
+/** 回收箱「近期／更早」分界天數（只分組，永不自動刪除） */
+function getTrashRecentDays(){
+  normalizeSettings();
+  const d = state.settings.trashRetentionDays;
+  if(typeof d !== 'number' || d < 1) return 30;
+  return Math.min(3650, Math.floor(d));
+}
+
+function getTrashRecentMs(){
+  return getTrashRecentDays() * 24 * 60 * 60 * 1000;
+}
 
 function normalizeSettings(){
-  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, sensitiveWords: [] };
+  if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, trashRetentionDays: 30, sensitiveWords: [] };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
   if(typeof state.settings.googleConnected !== 'boolean') state.settings.googleConnected = false;
   if(typeof state.settings.autoSync !== 'boolean') state.settings.autoSync = true;
+  // 沿用欄位名 trashRetentionDays＝分界天數；至少 1，預設 30；不會用來自動清除
+  if(typeof state.settings.trashRetentionDays !== 'number' || state.settings.trashRetentionDays < 1) state.settings.trashRetentionDays = 30;
+  if(state.settings.trashRetentionDays > 3650) state.settings.trashRetentionDays = 3650;
   if(!Array.isArray(state.settings.sensitiveWords)) state.settings.sensitiveWords = [];
   if(!state.dailyLog) state.dailyLog = {};
   if(!state.trash) state.trash = [];
 }
 
+/** 已廢止自動清除；保留函式名以免其它呼叫報錯 */
 function purgeOldTrash(){
-  if(!state.trash) { state.trash = []; return; }
-  const now = Date.now();
-  const before = state.trash.length;
-  state.trash = state.trash.filter(b => (now - (b.deletedAt || 0)) < TRASH_RETENTION_MS);
-  return before !== state.trash.length;
+  if(!state.trash) state.trash = [];
+  return false;
+}
+
+function bookMatchesTrashQuery(book, q){
+  if(!q) return true;
+  const lower = q.toLowerCase();
+  if((book.title || '').toLowerCase().indexOf(lower) !== -1) return true;
+  if((book.synopsis || '').toLowerCase().indexOf(lower) !== -1) return true;
+  if((book.tags || '').toLowerCase().indexOf(lower) !== -1) return true;
+  const chapters = book.chapters || [];
+  for(let i = 0; i < chapters.length; i++){
+    const ch = chapters[i];
+    if((ch.title || '').toLowerCase().indexOf(lower) !== -1) return true;
+    const sections = ch.sections || [];
+    for(let j = 0; j < sections.length; j++){
+      const sec = sections[j];
+      if((sec.text || '').toLowerCase().indexOf(lower) !== -1) return true;
+      if((sec.note || '').toLowerCase().indexOf(lower) !== -1) return true;
+    }
+  }
+  return false;
 }
 
 /* ---------------- writing activity tracking ---------------- */
@@ -2546,7 +2582,7 @@ function renderLibrary(){
     card.querySelector('[data-edit]').onclick = (e) => { e.stopPropagation(); openBookInfoModal(book.id); };
     card.querySelector('[data-del]').onclick = (e) => {
       e.stopPropagation();
-      if(!confirm(`確定要刪除「${book.title}」嗎？會先移到回收箱，30 天內都可以還原。`)) return;
+      if(!confirm(`確定要刪除「${book.title}」嗎？會移到回收箱，可隨時還原；不會自動清除。`)) return;
       state.books = state.books.filter(b => b.id !== book.id);
       book.deletedAt = Date.now();
       state.trash.push(book);
@@ -3744,6 +3780,7 @@ function openSettingsModal(){
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
   document.getElementById('toggleAutoSync').checked = !!(state.settings && state.settings.autoSync);
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
+  document.getElementById('trashRetentionInput').value = getTrashRecentDays();
   try{
     document.getElementById('googleClientIdInput').value = localStorage.getItem(LS_CLIENT_ID) || DEFAULT_GOOGLE_CLIENT_ID;
   } catch(e){
@@ -3822,6 +3859,15 @@ document.getElementById('dailyGoalInput').addEventListener('change', e => {
   const v = parseInt(e.target.value, 10);
   state.settings.dailyGoal = (v > 0) ? v : 1000;
   e.target.value = state.settings.dailyGoal;
+  schedulePersist();
+});
+document.getElementById('trashRetentionInput').addEventListener('change', e => {
+  normalizeSettings();
+  let v = parseInt(e.target.value, 10);
+  if(isNaN(v) || v < 1) v = 30;
+  if(v > 3650) v = 3650;
+  state.settings.trashRetentionDays = v;
+  e.target.value = v;
   schedulePersist();
 });
 
@@ -3967,52 +4013,94 @@ document.getElementById('calNextBtn').onclick = () => {
 };
 
 /* ---------------- trash (recycle bin) ---------------- */
+function appendTrashItem(list, book, recentDays){
+  const ageMs = Date.now() - (book.deletedAt || 0);
+  const ageDays = Math.max(0, Math.floor(ageMs / 86400000));
+  const when = book.deletedAt ? formatSyncTime(book.deletedAt) : '—';
+  const item = document.createElement('div');
+  item.className = 'trash-item';
+  item.innerHTML = `
+    <div class="trash-item-info">
+      <div class="trash-item-title">${escapeHtml(book.title)}</div>
+      <div class="trash-item-meta">${bookWordTotal(book)} 字 · 刪於 ${when} · 已 ${ageDays} 天</div>
+    </div>
+    <div class="trash-item-actions">
+      <button data-restore>還原</button>
+      <button data-purge>永久刪除</button>
+    </div>
+  `;
+  item.querySelector('[data-restore]').onclick = () => {
+    state.trash = state.trash.filter(b => b.id !== book.id);
+    delete book.deletedAt;
+    book.updatedAt = Date.now();
+    state.books.push(book);
+    schedulePersist();
+    renderTrash();
+    renderLibrary();
+  };
+  item.querySelector('[data-purge]').onclick = () => {
+    if(!confirm(`確定要永久刪除「${book.title}」嗎？這次真的無法復原。`)) return;
+    state.trash = state.trash.filter(b => b.id !== book.id);
+    schedulePersist();
+    renderTrash();
+  };
+  list.appendChild(item);
+}
+
 function renderTrash(){
   const list = document.getElementById('trashList');
-  purgeOldTrash();
+  if(!state.trash) state.trash = [];
+  const recentDays = getTrashRecentDays();
+  const recentMs = getTrashRecentMs();
+  const hint = document.getElementById('trashRetentionHint');
+  if(hint){
+    hint.textContent = `廢稿一律保留，不會自動刪除。近 ${recentDays} 天為「近期」，更早為「更早」；可搜尋書名與正文／備註。`;
+  }
+  const q = (document.getElementById('trashSearchInput') && document.getElementById('trashSearchInput').value || '').trim();
+  const filtered = state.trash.filter(b => bookMatchesTrashQuery(b, q));
   if(state.trash.length === 0){
     list.innerHTML = '<div class="lib-empty">回收箱是空的</div>';
     return;
   }
-  const sorted = [...state.trash].sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+  if(filtered.length === 0){
+    list.innerHTML = '<div class="lib-empty">沒有符合搜尋的廢稿</div>';
+    return;
+  }
+  const now = Date.now();
+  const recent = filtered.filter(b => (now - (b.deletedAt || 0)) < recentMs)
+    .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+  const older = filtered.filter(b => (now - (b.deletedAt || 0)) >= recentMs)
+    .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
   list.innerHTML = '';
-  sorted.forEach(book => {
-    const daysLeft = Math.max(0, Math.ceil((TRASH_RETENTION_MS - (Date.now() - (book.deletedAt || 0))) / 86400000));
-    const item = document.createElement('div');
-    item.className = 'trash-item';
-    item.innerHTML = `
-      <div class="trash-item-info">
-        <div class="trash-item-title">${escapeHtml(book.title)}</div>
-        <div class="trash-item-meta">${bookWordTotal(book)} 字 · 還剩 ${daysLeft} 天自動清除</div>
-      </div>
-      <div class="trash-item-actions">
-        <button data-restore>還原</button>
-        <button data-purge>永久刪除</button>
-      </div>
-    `;
-    item.querySelector('[data-restore]').onclick = () => {
-      state.trash = state.trash.filter(b => b.id !== book.id);
-      delete book.deletedAt;
-      book.updatedAt = Date.now();
-      state.books.push(book);
-      schedulePersist();
-      renderTrash();
-      renderLibrary();
-    };
-    item.querySelector('[data-purge]').onclick = () => {
-      if(!confirm(`確定要永久刪除「${book.title}」嗎？這次真的無法復原。`)) return;
-      state.trash = state.trash.filter(b => b.id !== book.id);
-      schedulePersist();
-      renderTrash();
-    };
-    list.appendChild(item);
-  });
+  const addSection = (title, books) => {
+    const head = document.createElement('div');
+    head.style.cssText = 'font-size:12px; color:var(--ink-soft); margin:12px 0 8px; font-weight:600;';
+    head.textContent = `${title}（${books.length}）`;
+    list.appendChild(head);
+    if(books.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'lib-empty';
+      empty.style.padding = '12px 0';
+      empty.textContent = '無';
+      list.appendChild(empty);
+      return;
+    }
+    books.forEach(book => appendTrashItem(list, book, recentDays));
+  };
+  addSection(`近期（${recentDays} 天內）`, recent);
+  addSection(`更早（超過 ${recentDays} 天）`, older);
 }
 
 document.getElementById('openTrashBtn').onclick = () => {
+  const input = document.getElementById('trashSearchInput');
+  if(input) input.value = '';
   renderTrash();
   document.getElementById('trashBackdrop').style.display = 'flex';
 };
+document.getElementById('trashSearchInput').addEventListener('input', () => {
+  clearTimeout(window._trashSearchTimer);
+  window._trashSearchTimer = setTimeout(() => renderTrash(), 150);
+});
 document.getElementById('trashCloseBtn').onclick = () => {
   document.getElementById('trashBackdrop').style.display = 'none';
   renderLibrary();
