@@ -838,42 +838,13 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
-  /* ---------- Grid paper background（原稿紙：一字一格） ---------- */
-  /* 格寬=字寬=1em；格高=行高。漢字約佔滿一格，英文/標點不強制齊格 */
-  #rows.grid-mode .left-cell{
-    background-color: var(--white);
-    min-height: calc(100dvh - 200px);
-  }
+  /* ---------- Grid paper background (稿紙格) ---------- */
   #rows.grid-mode .left-cell textarea{
-    --cell: 20px; /* 一格邊長 */
-    font-size: 18px !important; /* 漢字寬度 ≈ 1em ≈ 18px，略小於格，不貼線 */
-    line-height: var(--cell) !important;
-    letter-spacing: 0;
-    word-spacing: 0;
-    padding: 1px 0 0 1px; /* 微偏移，讓字落在格心附近 */
-    box-sizing: border-box;
-    background-color: transparent;
     background-image:
-      repeating-linear-gradient(
-        to bottom,
-        transparent 0,
-        transparent calc(var(--cell) - 1px),
-        var(--line-soft) calc(var(--cell) - 1px),
-        var(--line-soft) var(--cell)
-      ),
-      repeating-linear-gradient(
-        to right,
-        transparent 0,
-        transparent calc(var(--cell) - 1px),
-        var(--line-soft) calc(var(--cell) - 1px),
-        var(--line-soft) var(--cell)
-      );
-    background-size: 100% var(--cell), var(--cell) 100%;
-    background-position: 0 0, 0 0;
-    background-attachment: local;
-    background-origin: content-box;
-    background-clip: content-box;
-    min-height: calc(100dvh - 220px);
+      repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px),
+      repeating-linear-gradient(to right, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px);
+    background-position: 0 3px, 2px 0;
+    line-height: 28px;
   }
 
   /* ---------- Settings modal ---------- */
@@ -1843,7 +1814,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 14:00';
+const APP_BUILD = '2026-08-28 11:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
