@@ -839,11 +839,21 @@
   }
 
   /* ---------- Grid paper background (稿紙格) ---------- */
-  #rows.grid-mode .left-cell textarea{
+  /* 鋪滿整個書寫區（#rows），而非只跟文字高度；空白處也是完整稿紙 */
+  #rows.grid-mode{
+    background-color: var(--paper);
     background-image:
       repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px),
       repeating-linear-gradient(to right, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px);
-    background-position: 0 3px, 2px 0;
+    background-attachment: local;
+    background-position: 0 0, 0 0;
+  }
+  #rows.grid-mode .left-cell textarea,
+  #rows.grid-mode .right-cell textarea{
+    background-color: transparent;
+    background-image: none;
+  }
+  #rows.grid-mode .left-cell textarea{
     line-height: 28px;
   }
 
@@ -1814,7 +1824,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 11:30';
+const APP_BUILD = '2026-08-28 11:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
