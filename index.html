@@ -1514,10 +1514,10 @@
 
 <div id="bookInfoBackdrop">
   <div id="bookInfoModal">
-    <h3>書籍資訊</h3>
+    <h3 id="bookInfoHeading">書籍資訊</h3>
     <div class="gate-field">
       <label>書名</label>
-      <input type="text" id="infoTitle" />
+      <input type="text" id="infoTitle" placeholder="為這篇作品取個名字" />
     </div>
     <div class="gate-field">
       <label>資料夾</label>
@@ -1802,7 +1802,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-25 10:10';
+const APP_BUILD = '2026-08-28 09:35';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2469,21 +2469,55 @@ function getAllTags(){
 }
 
 /* ---------------- book info modal (folder / tags / synopsis) ---------------- */
+/** 'edit' = 改既有作品；'create' = 新增文章（尚未寫入 state） */
+let infoModalMode = 'edit';
 let infoEditingBookId = null;
 let infoTagsDraft = [];
+
+function fillBookInfoDatalists(){
+  document.getElementById('folderDatalist').innerHTML = getAllFolders().map(f => `<option value="${escapeHtml(f)}">`).join('');
+  document.getElementById('tagDatalist').innerHTML = getAllTags().map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
 
 function openBookInfoModal(bookId){
   const book = state.books.find(b => b.id === bookId);
   if(!book) return;
+  infoModalMode = 'edit';
   infoEditingBookId = bookId;
   infoTagsDraft = (book.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+  document.getElementById('bookInfoHeading').textContent = '書籍資訊';
+  document.getElementById('infoSaveBtn').textContent = '儲存';
   document.getElementById('infoTitle').value = book.title;
   document.getElementById('infoFolder').value = book.folder || '';
   document.getElementById('infoSynopsis').value = book.synopsis || '';
-  document.getElementById('folderDatalist').innerHTML = getAllFolders().map(f => `<option value="${escapeHtml(f)}">`).join('');
-  document.getElementById('tagDatalist').innerHTML = getAllTags().map(t => `<option value="${escapeHtml(t)}">`).join('');
+  document.getElementById('infoTagInput').value = '';
+  fillBookInfoDatalists();
   renderTagChipEditor();
   document.getElementById('bookInfoBackdrop').style.display = 'flex';
+  setTimeout(() => document.getElementById('infoTitle').focus(), 30);
+}
+
+/** 新增文章：一次填書名／資料夾／標籤／簡介，確認後才建立並進入編輯 */
+function openNewBookModal(){
+  infoModalMode = 'create';
+  infoEditingBookId = null;
+  infoTagsDraft = [];
+  document.getElementById('bookInfoHeading').textContent = '新增文章';
+  document.getElementById('infoSaveBtn').textContent = '建立並開始寫作';
+  document.getElementById('infoTitle').value = '';
+  document.getElementById('infoFolder').value = '';
+  document.getElementById('infoSynopsis').value = '';
+  document.getElementById('infoTagInput').value = '';
+  fillBookInfoDatalists();
+  renderTagChipEditor();
+  document.getElementById('bookInfoBackdrop').style.display = 'flex';
+  setTimeout(() => document.getElementById('infoTitle').focus(), 30);
+}
+
+function closeBookInfoModal(){
+  document.getElementById('bookInfoBackdrop').style.display = 'none';
+  infoModalMode = 'edit';
+  infoEditingBookId = null;
 }
 
 function renderTagChipEditor(){
@@ -2498,7 +2532,7 @@ function renderTagChipEditor(){
 
 function addInfoTag(){
   const input = document.getElementById('infoTagInput');
-  const v = input.value.trim();
+  const v = input.value.trim().replace(/^#/, '');
   if(v && !infoTagsDraft.includes(v)) infoTagsDraft.push(v);
   input.value = '';
   renderTagChipEditor();
@@ -2509,21 +2543,37 @@ document.getElementById('infoTagInput').addEventListener('keydown', e => {
 });
 
 document.getElementById('infoSaveBtn').onclick = () => {
+  const title = document.getElementById('infoTitle').value.trim() || '未命名作品';
+  const folder = document.getElementById('infoFolder').value.trim();
+  const tags = infoTagsDraft.join(', ');
+  const synopsis = document.getElementById('infoSynopsis').value;
+
+  if(infoModalMode === 'create'){
+    const book = freshBook(title);
+    book.folder = folder;
+    book.tags = tags;
+    book.synopsis = synopsis;
+    state.books.push(book);
+    schedulePersist();
+    closeBookInfoModal();
+    openBook(book.id);
+    return;
+  }
+
   const book = state.books.find(b => b.id === infoEditingBookId);
   if(!book) return;
-  const newTitle = document.getElementById('infoTitle').value.trim();
-  book.title = newTitle || book.title;
-  book.folder = document.getElementById('infoFolder').value.trim();
-  book.tags = infoTagsDraft.join(', ');
-  book.synopsis = document.getElementById('infoSynopsis').value;
+  book.title = title;
+  book.folder = folder;
+  book.tags = tags;
+  book.synopsis = synopsis;
   book.updatedAt = Date.now();
   schedulePersist();
-  document.getElementById('bookInfoBackdrop').style.display = 'none';
+  closeBookInfoModal();
   renderLibrary();
 };
-document.getElementById('infoCancelBtn').onclick = () => { document.getElementById('bookInfoBackdrop').style.display = 'none'; };
+document.getElementById('infoCancelBtn').onclick = () => closeBookInfoModal();
 document.getElementById('bookInfoBackdrop').addEventListener('click', e => {
-  if(e.target.id === 'bookInfoBackdrop') document.getElementById('bookInfoBackdrop').style.display = 'none';
+  if(e.target.id === 'bookInfoBackdrop') closeBookInfoModal();
 });
 
 function renderFilterBar(){
@@ -2644,14 +2694,7 @@ function renderLibrary(){
   });
 }
 
-document.getElementById('newBookBtn').onclick = () => {
-  const title = window.prompt('為這本新作品取個名字：', '');
-  if(title === null) return; // 使用者取消
-  const book = freshBook(title.trim() || '未命名作品');
-  state.books.push(book);
-  schedulePersist();
-  openBook(book.id);
-};
+document.getElementById('newBookBtn').onclick = () => openNewBookModal();
 
 document.getElementById('toLibraryBtn').onclick = () => {
   flushPending();
