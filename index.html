@@ -839,25 +839,15 @@
   }
 
   /* ---------- Grid paper background（稿紙格，偏美觀） ---------- */
-  /* 不強制一字一格；正常字距；左側留白避免頂邊 */
+  /* 格線鋪滿到邊框：中間是密封方格，頭尾可被裁成半格（如附圖右側）；文字另留內邊距不頂邊 */
   #rows.grid-mode .left-cell{
     --cell: 28px;
     --grid-line: var(--line-soft);
     background-color: var(--white);
     border: 1px solid var(--grid-line);
     box-sizing: border-box;
-    padding: 12px 14px 10px 16px;
-    min-height: calc(100dvh - 200px);
-  }
-  #rows.grid-mode .left-cell textarea{
-    font-size: 15px !important;
-    line-height: var(--cell) !important;
-    letter-spacing: normal;
-    word-spacing: normal;
     padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    background-color: transparent;
+    min-height: calc(100dvh - 200px);
     background-image:
       repeating-linear-gradient(
         to bottom,
@@ -876,6 +866,17 @@
     background-size: 100% var(--cell), var(--cell) 100%;
     background-position: 0 0, 0 0;
     background-attachment: local;
+  }
+  #rows.grid-mode .left-cell textarea{
+    font-size: 15px !important;
+    line-height: var(--cell) !important;
+    letter-spacing: normal;
+    word-spacing: normal;
+    /* 文字縮進，不頂左右與頂邊；格線仍鋪滿到外框 */
+    padding: 10px 14px 10px 16px;
+    margin: 0;
+    box-sizing: border-box;
+    background: transparent;
     min-height: calc(100dvh - 220px);
   }
 
@@ -1846,7 +1847,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 14:35';
+const APP_BUILD = '2026-08-28 14:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
