@@ -838,13 +838,45 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
-  /* ---------- Grid paper background (稿紙格) ---------- */
+  /* ---------- Grid paper background（原稿紙：一字一格） ---------- */
+  /* 參考方格稿紙：字 15px、格 24px；letter-spacing 讓每字佔一格、落在格心；外框完整 */
+  #rows.grid-mode .left-cell{
+    --cell: 24px;
+    --grid-line: var(--line-soft);
+    background-color: var(--white);
+    border: 1.5px solid var(--grid-line);
+    box-sizing: border-box;
+    padding: 0;
+    min-height: calc(100dvh - 200px);
+  }
   #rows.grid-mode .left-cell textarea{
+    font-size: 15px !important;
+    line-height: var(--cell) !important;
+    letter-spacing: calc(var(--cell) - 1em);
+    word-spacing: 0;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    background-color: transparent;
     background-image:
-      repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px),
-      repeating-linear-gradient(to right, transparent 0, transparent 27px, var(--line-soft) 27px, var(--line-soft) 28px);
-    background-position: 0 3px, 2px 0;
-    line-height: 28px;
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent calc(var(--cell) - 1px),
+        var(--grid-line) calc(var(--cell) - 1px),
+        var(--grid-line) var(--cell)
+      ),
+      repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(var(--cell) - 1px),
+        var(--grid-line) calc(var(--cell) - 1px),
+        var(--grid-line) var(--cell)
+      );
+    background-size: 100% var(--cell), var(--cell) 100%;
+    background-position: 0 0, 0 0;
+    background-attachment: local;
+    min-height: calc(100dvh - 220px);
   }
 
   /* ---------- Settings modal ---------- */
@@ -1814,7 +1846,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 11:30';
+const APP_BUILD = '2026-08-28 14:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
