@@ -198,6 +198,11 @@
     max-width:160px;
     overflow:hidden;
     text-overflow:ellipsis;
+    cursor:pointer;
+  }
+  #bookNameTag:hover{
+    border-color:var(--vermillion);
+    background:#F5E4DC;
   }
   #chapterTitle{
     font-family:"Noto Serif SC", serif;
@@ -1848,7 +1853,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 14:50';
+const APP_BUILD = '2026-08-28 15:15';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2620,8 +2625,22 @@ document.getElementById('infoSaveBtn').onclick = () => {
   book.updatedAt = Date.now();
   schedulePersist();
   closeBookInfoModal();
+  // 若在編輯頁，同步頂欄／側欄書名
+  if(state.currentBookId === book.id){
+    const tag = document.getElementById('bookNameTag');
+    const label = document.getElementById('currentBookLabel');
+    if(tag) tag.textContent = '📖 ' + book.title;
+    if(label) label.textContent = book.title;
+  }
   renderLibrary();
 };
+
+// 編輯頁點書名標籤 → 修改文章標題／標籤等
+document.getElementById('bookNameTag').onclick = () => {
+  if(!state || !state.currentBookId) return;
+  openBookInfoModal(state.currentBookId);
+};
+document.getElementById('bookNameTag').title = '點擊修改文章標題與資訊';
 document.getElementById('infoCancelBtn').onclick = () => closeBookInfoModal();
 document.getElementById('bookInfoBackdrop').addEventListener('click', e => {
   if(e.target.id === 'bookInfoBackdrop') closeBookInfoModal();
