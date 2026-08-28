@@ -1693,7 +1693,7 @@
   <div id="history">
     <button id="closeHistory">← 返回寫作</button>
     <h2>版本歷史</h2>
-    <div class="ov-sub">「結束本次寫作」時自動固化一版；也可隨時手動備份。版本長期保留</div>
+    <div class="ov-sub">自動保存會定期固化版本；關閉分頁前也會嘗試存一版。未保存完就關窗時，瀏覽器會提醒。最多保留 100 版</div>
     <button class="hist-add" id="histAdd">＋ 手動備份目前版本</button>
     <div id="histList"></div>
   </div>
@@ -1853,7 +1853,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 15:15';
+const APP_BUILD = '2026-08-28 15:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3246,10 +3246,51 @@ document.getElementById('charAdd').onclick = () => {
 
 /* ---------------- version history ---------------- */
 function saveSnapshot(label){
-  currentBook().versionHistory.unshift({
-    id: newId(), label, ts: new Date().toISOString(), chapters: deepClone(currentBook().chapters)
+  const book = currentBook();
+  if(!book) return;
+  if(!book.versionHistory) book.versionHistory = [];
+  book.versionHistory.unshift({
+    id: newId(), label, ts: new Date().toISOString(), chapters: deepClone(book.chapters)
   });
-  if(currentBook().versionHistory.length > 100) currentBook().versionHistory.pop();
+  if(book.versionHistory.length > 100) book.versionHistory.pop();
+}
+
+function chaptersContentSig(chapters){
+  try{
+    return JSON.stringify((chapters || []).map(c => ({
+      id: c.id,
+      title: c.title,
+      sections: (c.sections || []).map(s => [s.id, s.text || '', s.note || ''])
+    })));
+  } catch(e){
+    return String(Date.now());
+  }
+}
+
+/** 隨自動保存固化版本：內容有變才存；最短間隔 30 秒；字數變化大或距上次 ≥2 分鐘再存 */
+let lastAutoSnapAt = 0;
+function maybeAutoSnapshot(){
+  const book = currentBook();
+  if(!book || !book.chapters) return;
+  if(!book.versionHistory) book.versionHistory = [];
+  const sig = chaptersContentSig(book.chapters);
+  const last = book.versionHistory[0];
+  if(last && chaptersContentSig(last.chapters) === sig) return;
+
+  const now = Date.now();
+  const elapsed = now - lastAutoSnapAt;
+  if(elapsed < 30 * 1000) return;
+
+  let should = !last;
+  if(last){
+    const dw = Math.abs(totalWords(book.chapters) - totalWords(last.chapters));
+    if(dw >= 80) should = true;
+    if(elapsed >= 2 * 60 * 1000) should = true;
+  }
+  if(!should) return;
+
+  lastAutoSnapAt = now;
+  saveSnapshot('自動保存');
 }
 
 function formatTs(iso){
@@ -3345,8 +3386,8 @@ function computeChapterDiff(vc, cur){
 
 function renderHistory(){
   const list = document.getElementById('histList');
-  if(currentBook().versionHistory.length === 0){
-    list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有保存的版本，結束寫作或手動備份後會出現在這裡</div>';
+  if(!currentBook().versionHistory || currentBook().versionHistory.length === 0){
+    list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有版本。繼續寫作並等待自動保存後會出現；也可點上方手動備份。</div>';
     return;
   }
   list.innerHTML = '';
@@ -3545,12 +3586,17 @@ function setAutosaveStatus(status){
   }
 }
 
+let dirtySincePersist = false;
+
 async function persistNow(){
   if(!vaultKey || !state) return;
   clearTimeout(persistTimer);
+  persistTimer = null;
   try{
+    try{ maybeAutoSnapshot(); } catch(e){}
     const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, state);
     await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
+    dirtySincePersist = false;
     setAutosaveStatus('saved');
     scheduleDriveSync();
   } catch(err){
@@ -3562,21 +3608,45 @@ async function persistNow(){
 function schedulePersist(){
   if(!vaultKey || !state) return;
   if(currentBook()) currentBook().updatedAt = Date.now();
+  dirtySincePersist = true;
   setAutosaveStatus('saving');
   clearTimeout(persistTimer);
   persistTimer = setTimeout(persistNow, 600);
 }
 
+/** 關頁前：內容相對最新版本有變則再固化一版（多數人直接關窗、不點「結束本次寫作」） */
+function snapshotOnLeave(){
+  const book = currentBook();
+  if(!book || !book.chapters) return;
+  if(!book.versionHistory) book.versionHistory = [];
+  const sig = chaptersContentSig(book.chapters);
+  const last = book.versionHistory[0];
+  if(last && chaptersContentSig(last.chapters) === sig) return;
+  saveSnapshot('关闭页面前');
+}
+
 document.addEventListener('visibilitychange', () => {
   if(document.hidden){
+    try{ snapshotOnLeave(); } catch(e){}
     persistNow();
-    // 離開頁面時若已連結且開了自動同步，盡量立刻上傳一次
     if(state && state.settings && state.settings.googleConnected && state.settings.autoSync){
       pushVaultToDriveSilently();
     }
   }
 });
-window.addEventListener('pagehide', () => { persistNow(); });
+window.addEventListener('pagehide', () => {
+  try{ snapshotOnLeave(); } catch(e){}
+  persistNow();
+});
+
+// 尚有未寫入改動時關分頁：瀏覽器會提示「確定要離開嗎？」（文案由瀏覽器控制，無法自訂）
+window.addEventListener('beforeunload', e => {
+  if(!vaultKey || !state) return;
+  if(!dirtySincePersist && !persistTimer) return;
+  try{ snapshotOnLeave(); } catch(err){}
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 /* ================= gate / boot ================= */
 function showGate(mode){
