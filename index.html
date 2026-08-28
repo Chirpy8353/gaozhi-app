@@ -1214,6 +1214,15 @@
     font-size:11px; color:#6B5F45; line-height:1.6; margin-bottom:8px;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  .book-card-tags{
+    display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;
+  }
+  .book-card-tag{
+    font-size:10.5px; padding:2px 7px; border-radius:999px;
+    border:1px solid var(--line); color:var(--ink-soft); background:var(--white);
+    cursor:pointer; font-family:inherit;
+  }
+  .book-card-tag:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
   .book-stats{
     font-size:11px; color:var(--ink-faint); margin-top:auto; padding-top:10px;
     border-top:1px dashed var(--line-soft); line-height:1.6;
@@ -1802,7 +1811,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 09:35';
+const APP_BUILD = '2026-08-28 09:45';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2462,10 +2471,15 @@ let libFilterTags = new Set(); // 空集合 = 不限標籤
 function getAllFolders(){
   return [...new Set(state.books.map(b => (b.folder || '').trim()).filter(Boolean))];
 }
+function parseBookTags(bookOrTags){
+  const raw = typeof bookOrTags === 'string' ? bookOrTags : (bookOrTags && bookOrTags.tags) || '';
+  if(Array.isArray(raw)) return raw.map(t => String(t).trim()).filter(Boolean);
+  return String(raw).split(/[,，、]/).map(s => s.trim()).filter(Boolean);
+}
 function getAllTags(){
   const set = new Set();
-  state.books.forEach(b => (b.tags || '').split(',').map(s => s.trim()).filter(Boolean).forEach(t => set.add(t)));
-  return [...set];
+  state.books.forEach(b => parseBookTags(b).forEach(t => set.add(t)));
+  return [...set].sort((a, b) => a.localeCompare(b, 'zh'));
 }
 
 /* ---------------- book info modal (folder / tags / synopsis) ---------------- */
@@ -2484,7 +2498,7 @@ function openBookInfoModal(bookId){
   if(!book) return;
   infoModalMode = 'edit';
   infoEditingBookId = bookId;
-  infoTagsDraft = (book.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+  infoTagsDraft = parseBookTags(book);
   document.getElementById('bookInfoHeading').textContent = '書籍資訊';
   document.getElementById('infoSaveBtn').textContent = '儲存';
   document.getElementById('infoTitle').value = book.title;
@@ -2607,16 +2621,19 @@ function renderFilterBar(){
     });
   }
 
+  // 有作品就顯示標籤區：無標籤時給提示，有則可點選篩選
+  tagSection.style.display = 'block';
   if(tags.length === 0){
-    tagSection.style.display = 'none';
+    document.getElementById('tagChipsRow').innerHTML =
+      '<span style="font-size:11.5px; color:var(--ink-faint);">尚未有標籤。編輯作品資訊或新增文章時可加入，之後可在此篩選。</span>';
   } else {
-    tagSection.style.display = 'block';
-    document.getElementById('tagChipsRow').innerHTML = tags.map(t =>
-      `<button class="lib-chip${libFilterTags.has(t) ? ' active' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`
+    document.getElementById('tagChipsRow').innerHTML = tags.map((t, i) =>
+      `<button type="button" class="lib-chip${libFilterTags.has(t) ? ' active' : ''}" data-tag-idx="${i}">${escapeHtml(t)}</button>`
     ).join('');
-    document.getElementById('tagChipsRow').querySelectorAll('[data-tag]').forEach(btn => {
+    document.getElementById('tagChipsRow').querySelectorAll('[data-tag-idx]').forEach(btn => {
       btn.onclick = () => {
-        const t = btn.dataset.tag;
+        const t = tags[parseInt(btn.dataset.tagIdx, 10)];
+        if(!t) return;
         if(libFilterTags.has(t)) libFilterTags.delete(t); else libFilterTags.add(t);
         renderLibrary();
       };
@@ -2650,7 +2667,7 @@ function renderLibrary(){
   }
   if(libFilterTags.size > 0){
     filtered = filtered.filter(b => {
-      const bookTags = (b.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+      const bookTags = parseBookTags(b);
       return bookTags.some(t => libFilterTags.has(t));
     });
   }
@@ -2667,10 +2684,17 @@ function renderLibrary(){
     const chCount = book.chapters.length;
     const t = new Date(book.updatedAt || book.createdAt || Date.now());
     const timeStr = `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
+    const bookTags = parseBookTags(book);
+    const tagsHtml = bookTags.length
+      ? `<div class="book-card-tags">${bookTags.map(tg =>
+          `<button type="button" class="book-card-tag" data-filter-tag="${escapeHtml(tg)}">#${escapeHtml(tg)}</button>`
+        ).join('')}</div>`
+      : '';
     card.innerHTML = `
       <div class="book-card-main">
         <div class="book-title-display" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</div>
         ${book.synopsis ? `<div class="book-synopsis">${escapeHtml(book.synopsis)}</div>` : ''}
+        ${tagsHtml}
         <div class="book-stats">${chCount} 章 · 共 ${wc} 字 · 最後編輯 ${timeStr}</div>
       </div>
       <div class="book-actions">
@@ -2690,6 +2714,16 @@ function renderLibrary(){
       schedulePersist();
       renderLibrary();
     };
+    // 卡片上的標籤：點一下即可篩選
+    card.querySelectorAll('[data-filter-tag]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const tg = btn.getAttribute('data-filter-tag');
+        if(!tg) return;
+        if(libFilterTags.has(tg)) libFilterTags.delete(tg); else libFilterTags.add(tg);
+        renderLibrary();
+      };
+    });
     list.appendChild(card);
   });
 }
