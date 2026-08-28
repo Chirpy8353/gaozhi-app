@@ -838,22 +838,22 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
-  /* ---------- Grid paper background（原稿紙：一字一格） ---------- */
-  /* 參考方格稿紙：字 15px、格 24px；letter-spacing 讓每字佔一格、落在格心；外框完整 */
+  /* ---------- Grid paper background（稿紙格，偏美觀） ---------- */
+  /* 不強制一字一格；正常字距；左側留白避免頂邊 */
   #rows.grid-mode .left-cell{
-    --cell: 24px;
+    --cell: 28px;
     --grid-line: var(--line-soft);
     background-color: var(--white);
-    border: 1.5px solid var(--grid-line);
+    border: 1px solid var(--grid-line);
     box-sizing: border-box;
-    padding: 0;
+    padding: 12px 14px 10px 16px;
     min-height: calc(100dvh - 200px);
   }
   #rows.grid-mode .left-cell textarea{
     font-size: 15px !important;
     line-height: var(--cell) !important;
-    letter-spacing: calc(var(--cell) - 1em);
-    word-spacing: 0;
+    letter-spacing: normal;
+    word-spacing: normal;
     padding: 0;
     margin: 0;
     box-sizing: border-box;
@@ -1846,7 +1846,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 14:30';
+const APP_BUILD = '2026-08-28 14:35';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
