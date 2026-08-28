@@ -913,9 +913,11 @@
   .gate-drive-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
 
   /* ---------- Library (book list) ---------- */
+  /* 佔滿整欄避免右側「多一條」空白；內容用左右 padding 居中在約 960px 內 */
   #library{
     display:none; flex:1; min-width:0; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    padding: 40px 48px 48px; width:100%; box-sizing:border-box;
+    width:100%; box-sizing:border-box;
+    padding: 40px max(24px, calc((100% - 960px) / 2)) 48px;
   }
   .library-header{
     display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
@@ -1006,7 +1008,8 @@
   /* ---------- Trash page (full page, list) ---------- */
   #trashPage{
     display:none; flex:1; min-width:0; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
-    padding: 40px 48px 48px; width:100%; box-sizing:border-box;
+    width:100%; box-sizing:border-box;
+    padding: 40px max(24px, calc((100% - 960px) / 2)) 48px;
   }
   #trashPage .library-header{ margin-bottom:16px; }
   .trash-tabs{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
@@ -1193,16 +1196,16 @@
   }
   #libraryList{
     display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, 200px);
     grid-auto-rows: min-content;
-    justify-content:stretch;
+    justify-content:start;
     align-items:start;
     gap:16px;
   }
   .book-card{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
     padding:16px; display:flex; flex-direction:column; transition:border-color .12s;
-    width:100%; height:auto; min-height:200px; box-sizing:border-box; overflow:hidden;
+    width:200px; height:auto; min-height:200px; box-sizing:border-box; overflow:hidden;
   }
   .book-card:hover{ border-color:var(--vermillion-soft); }
   .book-card-main{ flex:1; min-width:0; }
@@ -1811,7 +1814,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 10:15';
+const APP_BUILD = '2026-08-28 10:25';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
