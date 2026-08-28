@@ -1814,7 +1814,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 10:25';
+const APP_BUILD = '2026-08-28 10:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -4103,14 +4103,45 @@ function playKeySound(){
   }
 }
 
-// 用 input 事件而非 keydown 來觸發音效：keydown 在手機虛擬鍵盤上很不可靠
-// （很多輸入法只會觸發 input，不會觸發正常的 keydown），但 input 事件在
-// 桌面實體鍵盤和手機虛擬鍵盤上都能穩定觸發，兩邊都能聽到聲音。
+// 鍵盤聲：桌面中文輸入法組詞時，input 要等整句上屏才觸發，長句會「沒聲音直到回車」。
+// 改為 keydown 每按一鍵就響（組拼音過程也有聲）；手機虛擬鍵盤仍靠 input。
+// 短時間去重，避免同一鍵 keydown + input 雙響。
+let lastKeySoundAt = 0;
+function maybePlayKeySound(){
+  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  if(now - lastKeySoundAt < 28) return;
+  lastKeySoundAt = now;
+  playKeySound();
+}
+function isKeySoundTarget(el){
+  if(!el || !el.tagName) return false;
+  const tag = el.tagName;
+  if(tag === 'TEXTAREA') return true;
+  if(tag === 'INPUT'){
+    const t = (el.type || 'text').toLowerCase();
+    return t === 'text' || t === 'search' || t === '' || t === 'url' || t === 'email';
+  }
+  return false;
+}
+document.addEventListener('keydown', e => {
+  if(!state || !state.settings || !state.settings.keySound) return;
+  if(!isKeySoundTarget(e.target)) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if(!k || k === 'Shift' || k === 'Control' || k === 'Alt' || k === 'Meta' ||
+     k === 'CapsLock' || k === 'Tab' || k === 'Escape' || k === 'Process' ||
+     k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight' ||
+     k === 'Home' || k === 'End' || k === 'PageUp' || k === 'PageDown') return;
+  // 可打印字符、空白、退格、刪除、Enter（組詞選字時也會按到）
+  if(k.length === 1 || k === 'Backspace' || k === 'Enter' || k === 'Delete'){
+    maybePlayKeySound();
+  }
+});
 document.addEventListener('input', e => {
   if(!state || !state.settings || !state.settings.keySound) return;
-  const tag = e.target.tagName;
-  if(tag !== 'TEXTAREA' && tag !== 'INPUT') return;
-  playKeySound();
+  if(!isKeySoundTarget(e.target)) return;
+  // 手機鍵盤多半只有 input；桌面若剛 keydown 播過會被去重跳過
+  maybePlayKeySound();
 });
 
 // 已停用 Service Worker（不再使用 sw.js）。若瀏覽器裡還有舊註冊／快取，啟動時清掉，避免看到舊版。
