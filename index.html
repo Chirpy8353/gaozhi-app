@@ -1814,7 +1814,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 10:50';
+const APP_BUILD = '2026-08-28 11:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -4103,13 +4103,14 @@ function playKeySound(){
   }
 }
 
-// 鍵盤聲：桌面中文輸入法組詞時，input 要等整句上屏才觸發，長句會「沒聲音直到回車」。
-// 改為 keydown 每按一鍵就響（組拼音過程也有聲）；手機虛擬鍵盤仍靠 input。
-// 短時間去重，避免同一鍵 keydown + input 雙響。
+// 鍵盤聲：
+// - 僅 input：中文組長句要等上屏才響
+// - 組字時很多輸入法 key 固定為 "Process"，若排除 Process 則組字全程無聲
+// - keydown（含 Process／isComposing，capture）+ compositionupdate + input；短時去重
 let lastKeySoundAt = 0;
 function maybePlayKeySound(){
   const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-  if(now - lastKeySoundAt < 28) return;
+  if(now - lastKeySoundAt < 22) return;
   lastKeySoundAt = now;
   playKeySound();
 }
@@ -4123,24 +4124,35 @@ function isKeySoundTarget(el){
   }
   return false;
 }
+function isModifierOnlyKey(k){
+  return !k || k === 'Shift' || k === 'Control' || k === 'Alt' || k === 'Meta' ||
+    k === 'CapsLock' || k === 'Tab' || k === 'Escape' ||
+    k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight' ||
+    k === 'Home' || k === 'End' || k === 'PageUp' || k === 'PageDown';
+}
 document.addEventListener('keydown', e => {
   if(!state || !state.settings || !state.settings.keySound) return;
   if(!isKeySoundTarget(e.target)) return;
   if(e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
-  if(!k || k === 'Shift' || k === 'Control' || k === 'Alt' || k === 'Meta' ||
-     k === 'CapsLock' || k === 'Tab' || k === 'Escape' || k === 'Process' ||
-     k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight' ||
-     k === 'Home' || k === 'End' || k === 'PageUp' || k === 'PageDown') return;
-  // 可打印字符、空白、退格、刪除、Enter（組詞選字時也會按到）
+  if(isModifierOnlyKey(k)) return;
+  // 組字中或 Process／Unidentified：仍出聲
+  if(e.isComposing || k === 'Process' || k === 'Unidentified'){
+    maybePlayKeySound();
+    return;
+  }
   if(k.length === 1 || k === 'Backspace' || k === 'Enter' || k === 'Delete'){
     maybePlayKeySound();
   }
+}, true);
+document.addEventListener('compositionupdate', e => {
+  if(!state || !state.settings || !state.settings.keySound) return;
+  if(!isKeySoundTarget(e.target)) return;
+  maybePlayKeySound();
 });
 document.addEventListener('input', e => {
   if(!state || !state.settings || !state.settings.keySound) return;
   if(!isKeySoundTarget(e.target)) return;
-  // 手機鍵盤多半只有 input；桌面若剛 keydown 播過會被去重跳過
   maybePlayKeySound();
 });
 
