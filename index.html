@@ -579,6 +579,24 @@
     font-family:inherit; margin-bottom:18px;
   }
   .hist-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .hist-compare-panel{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:18px;
+  }
+  .hist-compare-title{
+    font-family:"Noto Serif SC", serif; font-size:14px; color:var(--ink); margin-bottom:10px;
+  }
+  .hist-compare-row{
+    display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
+  }
+  .hist-compare-row label{
+    font-size:12px; color:var(--ink-soft); min-width:120px;
+  }
+  .hist-compare-row select{
+    flex:1; min-width:180px; font-family:inherit; font-size:12.5px;
+    padding:7px 10px; border:1px solid var(--line); border-radius:var(--radius);
+    background:var(--paper); color:var(--ink);
+  }
   .hv-item{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
     padding:12px 16px; margin-bottom:8px;
@@ -1695,6 +1713,20 @@
     <h2>版本歷史</h2>
     <div class="ov-sub">自動保存會定期固化版本；關閉分頁前也會嘗試存一版。未保存完就關窗時，瀏覽器會提醒。最多保留 100 版</div>
     <button class="hist-add" id="histAdd">＋ 手動備份目前版本</button>
+    <div class="hist-compare-panel" id="histComparePanel">
+      <div class="hist-compare-title">對比任意兩版</div>
+      <div class="hist-compare-row">
+        <label>版本 A（較舊／對照）</label>
+        <select id="histCmpA"></select>
+      </div>
+      <div class="hist-compare-row">
+        <label>版本 B（較新／對照）</label>
+        <select id="histCmpB"></select>
+      </div>
+      <button type="button" class="hist-add" id="histCmpRunBtn" style="margin-top:8px;">開始對比 A → B</button>
+      <div class="ov-sub" style="margin-top:6px;">綠色為 B 相對 A 的新增，紅色為刪除。各條目上的「比較」仍是與目前正文比。</div>
+      <div id="histCmpResult" class="hv-diff open" style="display:none; margin-top:12px;"></div>
+    </div>
     <div id="histList"></div>
   </div>
 </div>
@@ -1853,7 +1885,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 15:50';
+const APP_BUILD = '2026-08-28 16:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2302,6 +2334,10 @@ document.getElementById('chapterTargetInput').addEventListener('change', e => {
   const ch = currentChapter();
   withHistory(() => { ch.targetWords = (v >= 0) ? v : 2500; });
   updateStrip();
+  // withHistory 已 schedulePersist；再排一次雲端同步，避免只改目標字數時手機仍見舊值
+  if(state && state.settings && state.settings.googleConnected && state.settings.autoSync){
+    scheduleDriveSync();
+  }
 });
 
 function flashAutosave(){
@@ -2837,6 +2873,21 @@ function stateContentScore(s){
   });
   score += (s.trash || []).length * 100;
   return score;
+}
+
+/** 狀態「新鮮度」：取作品最新 updatedAt（改目標字數等小改動分數不變，要靠時間判斷） */
+function stateFreshness(s){
+  let t = 0;
+  if(!s) return 0;
+  (s.books || []).forEach(b => {
+    if(b.updatedAt && b.updatedAt > t) t = b.updatedAt;
+    if(b.createdAt && b.createdAt > t) t = b.createdAt;
+  });
+  (s.trash || []).forEach(b => {
+    if(b.deletedAt && b.deletedAt > t) t = b.deletedAt;
+    if(b.updatedAt && b.updatedAt > t) t = b.updatedAt;
+  });
+  return t;
 }
 
 const LS_LAST_UPLOAD_SCORE = 'gaozhi_last_upload_score';
@@ -3384,7 +3435,111 @@ function computeChapterDiff(vc, cur){
   };
 }
 
+function buildChaptersDiffHtml(chaptersA, chaptersB){
+  const chapterIds = [];
+  (chaptersA || []).forEach(c => chapterIds.push(c.id));
+  (chaptersB || []).forEach(c => { if(chapterIds.indexOf(c.id) === -1) chapterIds.push(c.id); });
+  if(chapterIds.length === 0){
+    return '<div style="color:var(--ink-faint); font-size:12.5px; padding:8px 0;">兩邊都沒有章節</div>';
+  }
+  return chapterIds.map(id => {
+    const va = (chaptersA || []).find(c => c.id === id);
+    const vb = (chaptersB || []).find(c => c.id === id);
+    const title = (va || vb).title;
+    if(!va){
+      return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-pos">B 新增章節</span></div></div>`;
+    }
+    if(!vb){
+      return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-neg">B 中已無此章</span></div></div>`;
+    }
+    const { added, removed, html } = computeChapterDiff(va, vb);
+    if(added === 0 && removed === 0){
+      return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-zero">無變動</span></div></div>`;
+    }
+    const rowId = 'dc-' + Math.random().toString(36).slice(2, 9);
+    return `
+      <div class="diff-chapter-row">
+        <div class="dc-head">
+          <span class="dc-title">${escapeHtml(title)}</span>
+          <span class="dc-delta"><span class="diff-pos">+${added}</span> <span class="diff-neg">-${removed}</span></span>
+          <button type="button" data-toggle="${rowId}">查看修改處</button>
+        </div>
+        <div class="dc-body" id="${rowId}">${html}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function bindDiffToggleButtons(root){
+  if(!root) return;
+  root.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.onclick = () => {
+      const body = document.getElementById(btn.dataset.toggle);
+      if(!body) return;
+      const isOpen = body.classList.toggle('open');
+      btn.textContent = isOpen ? '收合' : '查看修改處';
+    };
+  });
+}
+
+function getVersionChaptersByKey(key){
+  if(key === 'current') return currentBook().chapters;
+  const hist = currentBook().versionHistory || [];
+  const v = hist.find(x => x.id === key);
+  return v ? v.chapters : null;
+}
+
+function fillHistCompareSelects(){
+  const selA = document.getElementById('histCmpA');
+  const selB = document.getElementById('histCmpB');
+  if(!selA || !selB) return;
+  const hist = currentBook().versionHistory || [];
+  const curWc = totalWords(currentBook().chapters);
+  const opts = [`<option value="current">目前正文（${curWc} 字）</option>`]
+    .concat(hist.map(v =>
+      `<option value="${escapeHtml(v.id)}">${escapeHtml(v.label)} · ${formatTs(v.ts)} · ${totalWords(v.chapters)} 字</option>`
+    ));
+  const html = opts.join('');
+  const prevA = selA.value;
+  const prevB = selB.value;
+  selA.innerHTML = html;
+  selB.innerHTML = html;
+  // 預設：A = 次新歷史（或最舊有兩版時第二項），B = 目前
+  if(hist.length >= 1){
+    selA.value = (prevA && (prevA === 'current' || hist.some(v => v.id === prevA))) ? prevA : hist[0].id;
+    selB.value = (prevB && (prevB === 'current' || hist.some(v => v.id === prevB))) ? prevB : 'current';
+  } else {
+    selA.value = 'current';
+    selB.value = 'current';
+  }
+}
+
+function runHistCompareAB(){
+  const keyA = document.getElementById('histCmpA').value;
+  const keyB = document.getElementById('histCmpB').value;
+  const box = document.getElementById('histCmpResult');
+  if(keyA === keyB){
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">請選擇兩個不同的版本</div>';
+    return;
+  }
+  const chaptersA = getVersionChaptersByKey(keyA);
+  const chaptersB = getVersionChaptersByKey(keyB);
+  if(!chaptersA || !chaptersB){
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--vermillion); font-size:12.5px;">找不到所選版本</div>';
+    return;
+  }
+  box.style.display = 'block';
+  box.innerHTML = buildChaptersDiffHtml(chaptersA, chaptersB);
+  bindDiffToggleButtons(box);
+}
+
 function renderHistory(){
+  fillHistCompareSelects();
+  const result = document.getElementById('histCmpResult');
+  if(result){ result.style.display = 'none'; result.innerHTML = ''; }
+
   const list = document.getElementById('histList');
   if(!currentBook().versionHistory || currentBook().versionHistory.length === 0){
     list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有版本。繼續寫作並等待自動保存後會出現；也可點上方手動備份。</div>';
@@ -3400,7 +3555,7 @@ function renderHistory(){
         <span class="hv-time">${formatTs(v.ts)}</span>
         <span class="hv-wc">共 ${totalWords(v.chapters)} 字</span>
         <div class="hv-actions">
-          <button data-act="compare">比較</button>
+          <button data-act="compare">與目前比較</button>
           <button data-act="restore">還原至此版</button>
         </div>
       </div>
@@ -3423,44 +3578,8 @@ function renderHistory(){
       const open = diffBox.classList.toggle('open');
       if(open && !diffBox.dataset.built){
         diffBox.dataset.built = '1';
-        const chapterIds = [];
-        v.chapters.forEach(vc => chapterIds.push(vc.id));
-        currentBook().chapters.forEach(c => { if(!chapterIds.includes(c.id)) chapterIds.push(c.id); });
-
-        diffBox.innerHTML = chapterIds.map(id => {
-          const vc = v.chapters.find(c => c.id === id);
-          const cur = currentBook().chapters.find(c => c.id === id);
-          const title = (vc || cur).title;
-          if(!vc){
-            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-pos">新增章節</span></div></div>`;
-          }
-          if(!cur){
-            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-neg">此版本後已刪除</span></div></div>`;
-          }
-          const { added, removed, html } = computeChapterDiff(vc, cur);
-          if(added === 0 && removed === 0){
-            return `<div class="diff-chapter-row"><div class="dc-head"><span class="dc-title">${escapeHtml(title)}</span><span class="dc-delta diff-zero">無變動</span></div></div>`;
-          }
-          const rowId = 'dc-' + Math.random().toString(36).slice(2, 9);
-          return `
-            <div class="diff-chapter-row">
-              <div class="dc-head">
-                <span class="dc-title">${escapeHtml(title)}</span>
-                <span class="dc-delta"><span class="diff-pos">+${added}</span> <span class="diff-neg">-${removed}</span></span>
-                <button data-toggle="${rowId}">查看修改處</button>
-              </div>
-              <div class="dc-body" id="${rowId}">${html}</div>
-            </div>
-          `;
-        }).join('');
-
-        diffBox.querySelectorAll('[data-toggle]').forEach(btn => {
-          btn.onclick = () => {
-            const body = document.getElementById(btn.dataset.toggle);
-            const isOpen = body.classList.toggle('open');
-            btn.textContent = isOpen ? '收合' : '查看修改處';
-          };
-        });
+        diffBox.innerHTML = buildChaptersDiffHtml(v.chapters, currentBook().chapters);
+        bindDiffToggleButtons(diffBox);
       }
     };
     list.appendChild(item);
@@ -3472,6 +3591,7 @@ document.getElementById('histAdd').onclick = () => {
   renderHistory();
   schedulePersist();
 };
+document.getElementById('histCmpRunBtn').onclick = () => runHistCompareAB();
 
 /* ---------------- view switching ---------------- */
 function showView(view){
@@ -3767,8 +3887,24 @@ async function resolveLocalVsCloud(localState, unlockPassword){
 
   const scoreDiff = Math.abs(localScore - cloudScore);
   const similar = scoreDiff < Math.max(50, Math.max(localScore, cloudScore) * 0.05);
-  if(similar && localScore >= 10){
-    // 幾乎一樣：用本機，進入後自動備份更新雲端
+  const localFresh = stateFreshness(localState);
+  const cloudFresh = stateFreshness(cloudState);
+
+  // 分數接近時：以較新的 updatedAt 為準（例如只改了本章目標字數）
+  if(similar && (localScore >= 10 || cloudScore >= 10)){
+    if(cloudFresh > localFresh + 1500){
+      vaultKey = cloudKey;
+      vaultSalt = cloudSalt;
+      if(!cloudState.settings) cloudState.settings = {};
+      cloudState.settings.googleConnected = true;
+      try{
+        const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, cloudState);
+        await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
+      } catch(e){}
+      setLastUploadScore(cloudScore);
+      return { state: cloudState, source: 'cloud-newer' };
+    }
+    // 本機較新或同時：用本機，進入後上傳覆蓋雲端
     return { state: localState, source: 'local-similar' };
   }
 
@@ -3776,6 +3912,8 @@ async function resolveLocalVsCloud(localState, unlockPassword){
   if(localScore < 10 && cloudScore >= 10) recommend = 'cloud';
   else if(cloudScore > localScore * 1.5) recommend = 'cloud';
   else if(localScore > cloudScore * 1.5) recommend = 'local';
+  else if(cloudFresh > localFresh + 1500) recommend = 'cloud';
+  else if(localFresh > cloudFresh + 1500) recommend = 'local';
 
   const choice = await askLocalOrCloud(localSum, cloudSum, recommend);
   if(choice === 'cloud'){
@@ -3783,7 +3921,6 @@ async function resolveLocalVsCloud(localState, unlockPassword){
     vaultSalt = cloudSalt;
     if(!cloudState.settings) cloudState.settings = {};
     cloudState.settings.googleConnected = true;
-    // 寫入本機，之後以這份為準
     try{
       const { iv, ciphertext } = await CryptoVault.encryptJSON(vaultKey, cloudState);
       await VaultDB.set('vault', { salt: vaultSalt, iv, ciphertext, updatedAt: Date.now() });
