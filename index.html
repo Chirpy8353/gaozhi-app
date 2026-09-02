@@ -579,24 +579,41 @@
     font-family:inherit; margin-bottom:18px;
   }
   .hist-add:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
-  .hist-compare-panel{
-    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
-    padding:14px 16px; margin-bottom:18px;
+  /* Wiki 式版本列表：左舊／右新 兩個單選 */
+  .hist-toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px;
   }
-  .hist-compare-title{
-    font-family:"Noto Serif SC", serif; font-size:14px; color:var(--ink); margin-bottom:10px;
+  .hist-table{
+    width:100%; border-collapse:collapse; background:var(--white);
+    border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden;
+    margin-bottom:14px;
   }
-  .hist-compare-row{
-    display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
+  .hist-table th{
+    font-size:11px; font-weight:600; color:var(--ink-faint); text-align:left;
+    padding:8px 10px; border-bottom:1px solid var(--line-soft); background:var(--paper);
   }
-  .hist-compare-row label{
-    font-size:12px; color:var(--ink-soft); min-width:120px;
+  .hist-table td{
+    font-size:12.5px; padding:9px 10px; border-bottom:1px solid var(--line-soft);
+    vertical-align:middle; color:var(--ink);
   }
-  .hist-compare-row select{
-    flex:1; min-width:180px; font-family:inherit; font-size:12.5px;
-    padding:7px 10px; border:1px solid var(--line); border-radius:var(--radius);
-    background:var(--paper); color:var(--ink);
+  .hist-table tr:last-child td{ border-bottom:none; }
+  .hist-table tr:hover td{ background:rgba(0,0,0,0.02); }
+  .hist-table .col-radio{ width:36px; text-align:center; }
+  .hist-table .col-time{ white-space:nowrap; color:var(--ink-faint); font-size:11.5px; }
+  .hist-table .col-label{ font-family:"Noto Serif SC", serif; }
+  .hist-table .col-wc{ white-space:nowrap; color:var(--ink-soft); font-size:11.5px; }
+  .hist-table .col-act{ white-space:nowrap; }
+  .hist-table .col-act button{
+    font-family:inherit; font-size:11px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-soft); padding:3px 8px; border-radius:var(--radius); cursor:pointer; margin-left:4px;
   }
+  .hist-table .col-act button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .hist-table .col-act button.danger:hover{ border-color:var(--vermillion); color:var(--vermillion); }
+  .hist-table input[type="radio"]{ cursor:pointer; accent-color:var(--vermillion); }
+  #histCmpResult{
+    display:none; margin-top:8px; padding-top:12px; border-top:1px dashed var(--line-soft);
+  }
+  #histCmpResult.open{ display:block; }
   .hv-item{
     background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
     padding:12px 16px; margin-bottom:8px;
@@ -1711,23 +1728,13 @@
   <div id="history">
     <button id="closeHistory">← 返回寫作</button>
     <h2>版本歷史</h2>
-    <div class="ov-sub">自動保存會定期固化版本；關閉分頁前也會嘗試存一版。未保存完就關窗時，瀏覽器會提醒。最多保留 100 版</div>
-    <button class="hist-add" id="histAdd">＋ 手動備份目前版本</button>
-    <div class="hist-compare-panel" id="histComparePanel">
-      <div class="hist-compare-title">對比任意兩版</div>
-      <div class="hist-compare-row">
-        <label>版本 A（較舊／對照）</label>
-        <select id="histCmpA"></select>
-      </div>
-      <div class="hist-compare-row">
-        <label>版本 B（較新／對照）</label>
-        <select id="histCmpB"></select>
-      </div>
-      <button type="button" class="hist-add" id="histCmpRunBtn" style="margin-top:8px;">開始對比 A → B</button>
-      <div class="ov-sub" style="margin-top:6px;">綠色為 B 相對 A 的新增，紅色為刪除。各條目上的「比較」仍是與目前正文比。</div>
-      <div id="histCmpResult" class="hv-diff open" style="display:none; margin-top:12px;"></div>
+    <div class="ov-sub">類似 Wiki：在列表中點選「舊」「新」兩個版本後按「比較選定版本」。綠色為新版相對舊版的新增，紅色為刪除。最多保留 100 版。</div>
+    <div class="hist-toolbar">
+      <button class="hist-add" id="histAdd" style="margin-bottom:0;">＋ 手動備份目前版本</button>
+      <button class="hist-add" id="histCmpRunBtn" style="margin-bottom:0;">比較選定版本</button>
     </div>
     <div id="histList"></div>
+    <div id="histCmpResult"></div>
   </div>
 </div>
 
@@ -1885,7 +1892,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-08-28 16:30';
+const APP_BUILD = '2026-09-02 02:45';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3489,100 +3496,132 @@ function getVersionChaptersByKey(key){
   return v ? v.chapters : null;
 }
 
-function fillHistCompareSelects(){
-  const selA = document.getElementById('histCmpA');
-  const selB = document.getElementById('histCmpB');
-  if(!selA || !selB) return;
-  const hist = currentBook().versionHistory || [];
-  const curWc = totalWords(currentBook().chapters);
-  const opts = [`<option value="current">目前正文（${curWc} 字）</option>`]
-    .concat(hist.map(v =>
-      `<option value="${escapeHtml(v.id)}">${escapeHtml(v.label)} · ${formatTs(v.ts)} · ${totalWords(v.chapters)} 字</option>`
-    ));
-  const html = opts.join('');
-  const prevA = selA.value;
-  const prevB = selB.value;
-  selA.innerHTML = html;
-  selB.innerHTML = html;
-  // 預設：A = 次新歷史（或最舊有兩版時第二項），B = 目前
-  if(hist.length >= 1){
-    selA.value = (prevA && (prevA === 'current' || hist.some(v => v.id === prevA))) ? prevA : hist[0].id;
-    selB.value = (prevB && (prevB === 'current' || hist.some(v => v.id === prevB))) ? prevB : 'current';
-  } else {
-    selA.value = 'current';
-    selB.value = 'current';
-  }
-}
-
-function runHistCompareAB(){
-  const keyA = document.getElementById('histCmpA').value;
-  const keyB = document.getElementById('histCmpB').value;
+function runHistCompareSelected(){
+  const oldEl = document.querySelector('input[name="histOld"]:checked');
+  const newEl = document.querySelector('input[name="histNew"]:checked');
   const box = document.getElementById('histCmpResult');
-  if(keyA === keyB){
-    box.style.display = 'block';
+  if(!oldEl || !newEl){
+    box.classList.add('open');
+    box.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">請在列表中分別選一個「舊」與一個「新」版本</div>';
+    return;
+  }
+  const keyOld = oldEl.value;
+  const keyNew = newEl.value;
+  if(keyOld === keyNew){
+    box.classList.add('open');
     box.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">請選擇兩個不同的版本</div>';
     return;
   }
-  const chaptersA = getVersionChaptersByKey(keyA);
-  const chaptersB = getVersionChaptersByKey(keyB);
-  if(!chaptersA || !chaptersB){
-    box.style.display = 'block';
+  const chaptersOld = getVersionChaptersByKey(keyOld);
+  const chaptersNew = getVersionChaptersByKey(keyNew);
+  if(!chaptersOld || !chaptersNew){
+    box.classList.add('open');
     box.innerHTML = '<div style="color:var(--vermillion); font-size:12.5px;">找不到所選版本</div>';
     return;
   }
-  box.style.display = 'block';
-  box.innerHTML = buildChaptersDiffHtml(chaptersA, chaptersB);
+  const oldLabel = keyOld === 'current' ? '目前正文' : (oldEl.dataset.label || '舊版');
+  const newLabel = keyNew === 'current' ? '目前正文' : (newEl.dataset.label || '新版');
+  box.classList.add('open');
+  box.innerHTML = `<div class="ov-sub" style="margin-bottom:10px;">比較：<strong>${escapeHtml(oldLabel)}</strong> → <strong>${escapeHtml(newLabel)}</strong>（綠＝新版新增，紅＝刪除）</div>` +
+    buildChaptersDiffHtml(chaptersOld, chaptersNew);
   bindDiffToggleButtons(box);
 }
 
-function renderHistory(){
-  fillHistCompareSelects();
-  const result = document.getElementById('histCmpResult');
-  if(result){ result.style.display = 'none'; result.innerHTML = ''; }
+function deleteHistoryVersion(versionId){
+  const book = currentBook();
+  if(!book || !book.versionHistory) return;
+  const v = book.versionHistory.find(x => x.id === versionId);
+  if(!v) return;
+  if(!confirm(`確定刪除版本「${v.label}（${formatTs(v.ts)}）」？此操作不可復原。`)) return;
+  book.versionHistory = book.versionHistory.filter(x => x.id !== versionId);
+  schedulePersist();
+  renderHistory();
+}
 
+function restoreHistoryVersion(versionId){
+  const book = currentBook();
+  if(!book || !book.versionHistory) return;
+  const v = book.versionHistory.find(x => x.id === versionId);
+  if(!v) return;
+  if(!confirm(`確定要還原到「${v.label}（${formatTs(v.ts)}）」嗎？目前內容會先存入撤銷紀錄，仍可 Ctrl+Z 復原。`)) return;
+  flushPending();
+  pushHistory(deepClone(state));
+  book.chapters = deepClone(v.chapters);
+  if(!book.chapters.find(c => c.id === book.currentChapterId)){
+    book.currentChapterId = book.chapters[0] ? book.chapters[0].id : null;
+  }
+  renderAll();
+  showView('edit');
+  schedulePersist();
+}
+
+function renderHistory(){
   const list = document.getElementById('histList');
-  if(!currentBook().versionHistory || currentBook().versionHistory.length === 0){
-    list.innerHTML = '<div style="color:var(--ink-faint); font-size:12.5px;">目前還沒有版本。繼續寫作並等待自動保存後會出現；也可點上方手動備份。</div>';
+  const result = document.getElementById('histCmpResult');
+  if(result){ result.classList.remove('open'); result.innerHTML = ''; }
+
+  const hist = currentBook().versionHistory || [];
+  const curWc = totalWords(currentBook().chapters);
+
+  // 列：目前正文 + 歷史（Wiki 式：舊／新 兩個 radio）
+  const rows = [
+    { id: 'current', label: '目前正文', ts: null, wc: curWc, isCurrent: true }
+  ].concat(hist.map(v => ({
+    id: v.id, label: v.label, ts: v.ts, wc: totalWords(v.chapters), isCurrent: false
+  })));
+
+  if(hist.length === 0){
+    list.innerHTML = `
+      <div style="color:var(--ink-faint); font-size:12.5px; margin-bottom:12px;">目前還沒有歷史快照。繼續寫作並等待自動保存後會出現；也可點上方手動備份。</div>
+      <table class="hist-table">
+        <thead><tr>
+          <th class="col-radio">舊</th><th class="col-radio">新</th>
+          <th>時間</th><th>說明</th><th>字數</th><th></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="col-radio"><input type="radio" name="histOld" value="current" data-label="目前正文" /></td>
+            <td class="col-radio"><input type="radio" name="histNew" value="current" data-label="目前正文" checked /></td>
+            <td class="col-time">—</td>
+            <td class="col-label">目前正文</td>
+            <td class="col-wc">${curWc} 字</td>
+            <td class="col-act"></td>
+          </tr>
+        </tbody>
+      </table>`;
     return;
   }
-  list.innerHTML = '';
-  currentBook().versionHistory.forEach(v => {
-    const item = document.createElement('div');
-    item.className = 'hv-item';
-    item.innerHTML = `
-      <div class="hv-row">
-        <span class="hv-label">${escapeHtml(v.label)}</span>
-        <span class="hv-time">${formatTs(v.ts)}</span>
-        <span class="hv-wc">共 ${totalWords(v.chapters)} 字</span>
-        <div class="hv-actions">
-          <button data-act="compare">與目前比較</button>
-          <button data-act="restore">還原至此版</button>
-        </div>
-      </div>
-      <div class="hv-diff"></div>
-    `;
-    item.querySelector('[data-act="restore"]').onclick = () => {
-      if(!confirm(`確定要還原到「${v.label}（${formatTs(v.ts)}）」嗎？目前內容會先存入撤銷紀錄，仍可 Ctrl+Z 復原。`)) return;
-      flushPending();
-      pushHistory(deepClone(state));
-      currentBook().chapters = deepClone(v.chapters);
-      if(!currentBook().chapters.find(c => c.id === currentBook().currentChapterId)){
-        currentBook().currentChapterId = currentBook().chapters[0] ? currentBook().chapters[0].id : null;
-      }
-      renderAll();
-      showView('edit');
-      schedulePersist();
-    };
-    const diffBox = item.querySelector('.hv-diff');
-    item.querySelector('[data-act="compare"]').onclick = () => {
-      const open = diffBox.classList.toggle('open');
-      if(open && !diffBox.dataset.built){
-        diffBox.dataset.built = '1';
-        diffBox.innerHTML = buildChaptersDiffHtml(v.chapters, currentBook().chapters);
-        bindDiffToggleButtons(diffBox);
-      }
-    };
-    list.appendChild(item);
+
+  // 預設：新＝目前正文，舊＝最近一則歷史（Wiki 常見預設）
+  let html = `<table class="hist-table"><thead><tr>
+    <th class="col-radio">舊</th><th class="col-radio">新</th>
+    <th>時間</th><th>說明</th><th>字數</th><th></th>
+  </tr></thead><tbody>`;
+
+  rows.forEach((row, idx) => {
+    const oldChecked = idx === 1 ? ' checked' : '';
+    const newChecked = idx === 0 ? ' checked' : '';
+    const timeStr = row.ts ? formatTs(row.ts) : '—';
+    const acts = row.isCurrent ? '' : `
+      <button type="button" data-restore="${escapeHtml(row.id)}">還原</button>
+      <button type="button" class="danger" data-del="${escapeHtml(row.id)}">刪除</button>`;
+    html += `<tr>
+      <td class="col-radio"><input type="radio" name="histOld" value="${escapeHtml(row.id)}" data-label="${escapeHtml(row.label)}"${oldChecked} /></td>
+      <td class="col-radio"><input type="radio" name="histNew" value="${escapeHtml(row.id)}" data-label="${escapeHtml(row.label)}"${newChecked} /></td>
+      <td class="col-time">${timeStr}</td>
+      <td class="col-label">${escapeHtml(row.label)}</td>
+      <td class="col-wc">${row.wc} 字</td>
+      <td class="col-act">${acts}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  list.innerHTML = html;
+
+  list.querySelectorAll('[data-restore]').forEach(btn => {
+    btn.onclick = () => restoreHistoryVersion(btn.getAttribute('data-restore'));
+  });
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = () => deleteHistoryVersion(btn.getAttribute('data-del'));
   });
 }
 
@@ -3591,7 +3630,7 @@ document.getElementById('histAdd').onclick = () => {
   renderHistory();
   schedulePersist();
 };
-document.getElementById('histCmpRunBtn').onclick = () => runHistCompareAB();
+document.getElementById('histCmpRunBtn').onclick = () => runHistCompareSelected();
 
 /* ---------------- view switching ---------------- */
 function showView(view){
