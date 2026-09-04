@@ -1078,6 +1078,79 @@
     color:var(--ink-soft); border-radius:var(--radius); cursor:pointer; font-family:inherit; font-size:12px;
   }
 
+  /* ---------- Cards library（獨立素材卡） ---------- */
+  #cardsPage{
+    display:none; flex:1; min-width:0; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    width:100%; box-sizing:border-box;
+    padding: 40px max(24px, calc((100% - 960px) / 2)) 48px;
+  }
+  #cardsSearchInput{
+    width:100%; box-sizing:border-box; margin:0 0 12px;
+    padding:10px 14px; font-size:13px; font-family:inherit;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);
+  }
+  .cards-hint{ font-size:11.5px; color:var(--ink-faint); margin:0 0 16px; line-height:1.5; }
+  #cardsList{ display:flex; flex-direction:column; gap:10px; }
+  .card-item{
+    background:var(--white); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .card-item-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .card-item-title{ font-family:"Noto Serif SC", serif; font-size:15px; color:var(--ink); margin:0; }
+  .card-item-meta{ font-size:11px; color:var(--ink-faint); white-space:nowrap; }
+  .card-item-body{
+    font-size:13px; color:var(--ink); line-height:1.7; white-space:pre-wrap;
+    max-height:7.2em; overflow:hidden; margin-bottom:8px;
+  }
+  .card-item-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .card-tag-pill{
+    font-size:11px; padding:2px 10px; border-radius:10px;
+    background:var(--vermillion-bg); color:var(--vermillion); border:1px solid #E4C3B6;
+  }
+  .card-item-notes{ font-size:11.5px; color:var(--ink-soft); margin-bottom:8px; line-height:1.5; }
+  .card-item-notes li{ margin-left:1.2em; }
+  .card-item-acts{ display:flex; flex-wrap:wrap; gap:6px; }
+  .card-item-acts button{
+    font-family:inherit; font-size:11px; padding:4px 10px; border-radius:var(--radius); cursor:pointer;
+    background:transparent; border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .card-item-acts button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  #cardEditorBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:55; align-items:center; justify-content:center;
+  }
+  #cardEditorModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:min(520px, 94vw); max-height:90vh; overflow-y:auto; padding:22px; box-sizing:border-box;
+  }
+  #cardEditorModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 14px; }
+  #cardEditorModal label{ display:block; font-size:11.5px; color:var(--ink-faint); margin:0 0 4px; }
+  #cardEditorModal input[type="text"],
+  #cardEditorModal textarea{
+    width:100%; box-sizing:border-box; font-family:inherit; font-size:13px; color:var(--ink);
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--white);
+    padding:8px 10px; margin-bottom:12px;
+  }
+  #cardEditorModal textarea{ min-height:140px; resize:vertical; line-height:1.7; }
+  .card-notes-editor{ margin-bottom:12px; }
+  .card-note-row{
+    display:flex; gap:8px; align-items:flex-start; margin-bottom:6px;
+  }
+  .card-note-row input{ flex:1; margin-bottom:0 !important; }
+  .card-note-row button{
+    flex-shrink:0; font-family:inherit; font-size:11px; padding:8px 10px;
+    border:1px solid var(--line); background:var(--white); border-radius:var(--radius);
+    color:var(--ink-soft); cursor:pointer;
+  }
+  .card-editor-acts{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+  .card-editor-acts button{
+    font-family:inherit; font-size:12.5px; padding:8px 16px; border-radius:var(--radius); cursor:pointer;
+    border:1px solid var(--line); background:var(--white); color:var(--ink-soft);
+  }
+  .card-editor-acts button.primary{
+    background:var(--ink); color:var(--white); border-color:var(--ink);
+  }
+
   /* ---------- Trash modal ---------- */
   /* ---------- Trash page (full page, list) ---------- */
   #trashPage{
@@ -1460,6 +1533,7 @@
       <div class="subtitle">你的所有作品</div>
     </div>
     <div class="library-header-actions">
+      <button class="lib-icon-btn" id="openCardsBtn">🃏 卡片</button>
       <button class="lib-icon-btn" id="openStatsBtn">📊 今日概覽</button>
       <button class="lib-icon-btn" id="openTrashBtn">🗑 回收箱</button>
       <button class="lib-icon-btn" id="librarySettingsBtn">⚙ 設定</button>
@@ -1551,6 +1625,45 @@
   <input type="text" id="trashSearchInput" placeholder="搜尋：書名／正文；標籤請用 #短篇" />
   <div class="trash-search-hint">搜「短篇」查標題與內文；搜「#短篇」只查標籤。搜尋會跨近期與更早，結果會標明所在抽屜。</div>
   <div id="trashList"></div>
+</div>
+
+<div id="cardsPage">
+  <div class="library-header">
+    <div>
+      <h1>卡片</h1>
+      <div class="subtitle">獨立素材庫 · 場景／對話／閃念，不必先屬於某篇文章</div>
+    </div>
+    <div class="library-header-actions">
+      <button class="lib-icon-btn" id="cardsBackBtn">← 回書架</button>
+    </div>
+  </div>
+  <button class="lib-add" id="newCardBtn">＋ 新建卡片</button>
+  <input type="text" id="cardsSearchInput" placeholder="搜尋標題／正文；標籤用 #場景" />
+  <p class="cards-hint">標籤可多個。附註可多次記錄「某文某章已取用」，卡片仍是素材，不與正文綁死。</p>
+  <div class="lib-section" id="cardTagChipsSection" style="display:none;">
+    <div class="lib-section-label">🏷 標籤篩選</div>
+    <div class="lib-chip-row" id="cardTagChipsRow"></div>
+  </div>
+  <div id="cardsList"></div>
+</div>
+
+<div id="cardEditorBackdrop">
+  <div id="cardEditorModal">
+    <h3 id="cardEditorTitle">新建卡片</h3>
+    <label for="cardTitleInput">標題（可空）</label>
+    <input type="text" id="cardTitleInput" placeholder="例如：便利店雨夜" />
+    <label for="cardBodyInput">內容</label>
+    <textarea id="cardBodyInput" placeholder="場景、對話、氣氛……想到什麼寫什麼"></textarea>
+    <label for="cardTagsInput">標籤（逗號或空格分隔）</label>
+    <input type="text" id="cardTagsInput" placeholder="場景, 對話" />
+    <label>取用附註（可多條）</label>
+    <div class="card-notes-editor" id="cardNotesEditor"></div>
+    <button type="button" class="lib-icon-btn" id="cardAddNoteBtn" style="margin-bottom:12px;">＋ 加一條附註</button>
+    <div class="card-editor-acts">
+      <button type="button" id="cardEditorCancelBtn">取消</button>
+      <button type="button" class="primary" id="cardEditorSaveBtn">儲存</button>
+    </div>
+  </div>
 </div>
 
 <div id="wordCheckBackdrop">
@@ -1892,7 +2005,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-02 02:45';
+const APP_BUILD = '2026-09-04 09:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -1906,9 +2019,22 @@ function freshState(){
   return {
     currentBookId: null,
     books: [],
+    cards: [],
     trash: [],
     dailyLog: {},
     settings: { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 }
+  };
+}
+
+function freshCard(){
+  return {
+    id: newId(),
+    title: '',
+    body: '',
+    tags: [],
+    notes: [], // 取用附註：可多條，如「《某文》第一章已取用」
+    createdAt: Date.now(),
+    updatedAt: Date.now()
   };
 }
 
@@ -1963,6 +2089,17 @@ function normalizeSettings(){
   if(!Array.isArray(state.settings.sensitiveWords)) state.settings.sensitiveWords = [];
   if(!state.dailyLog) state.dailyLog = {};
   if(!state.trash) state.trash = [];
+  if(!Array.isArray(state.cards)) state.cards = [];
+  // 正規化舊資料：tags 字串 → 陣列；notes 確保為字串陣列
+  state.cards.forEach(c => {
+    if(!c) return;
+    if(typeof c.tags === 'string'){
+      c.tags = c.tags.split(/[,，\s]+/).map(t => t.trim()).filter(Boolean);
+    }
+    if(!Array.isArray(c.tags)) c.tags = [];
+    if(!Array.isArray(c.notes)) c.notes = [];
+    c.notes = c.notes.map(n => String(n == null ? '' : n)).filter(n => n.trim() !== '' || true);
+  });
 }
 
 /** 已廢止自動清除；保留函式名以免其它呼叫報錯 */
@@ -2469,6 +2606,7 @@ function showLibrary(){
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
   document.getElementById('trashPage').style.display = 'none';
+  document.getElementById('cardsPage').style.display = 'none';
   document.getElementById('library').style.display = 'block';
   state.currentBookId = null;
   renderLibrary();
@@ -2478,13 +2616,26 @@ function showTrashPage(){
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
   document.getElementById('library').style.display = 'none';
+  document.getElementById('cardsPage').style.display = 'none';
   document.getElementById('trashPage').style.display = 'block';
   renderTrash();
+}
+
+function showCardsPage(){
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('library').style.display = 'none';
+  document.getElementById('trashPage').style.display = 'none';
+  document.getElementById('cardsPage').style.display = 'block';
+  state.currentBookId = null;
+  renderCards();
 }
 
 function openBook(id){
   state.currentBookId = id;
   document.getElementById('library').style.display = 'none';
+  document.getElementById('trashPage').style.display = 'none';
+  document.getElementById('cardsPage').style.display = 'none';
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'flex';
   document.getElementById('sidebar').classList.toggle('collapsed', !!(state.settings && state.settings.sidebarCollapsed));
@@ -2879,6 +3030,9 @@ function stateContentScore(s){
     score += (b.versionHistory || []).length * 20;
   });
   score += (s.trash || []).length * 100;
+  (s.cards || []).forEach(c => {
+    score += 30 + ((c.body || '').length) + ((c.title || '').length);
+  });
   return score;
 }
 
@@ -2893,6 +3047,10 @@ function stateFreshness(s){
   (s.trash || []).forEach(b => {
     if(b.deletedAt && b.deletedAt > t) t = b.deletedAt;
     if(b.updatedAt && b.updatedAt > t) t = b.updatedAt;
+  });
+  (s.cards || []).forEach(c => {
+    if(c.updatedAt && c.updatedAt > t) t = c.updatedAt;
+    if(c.createdAt && c.createdAt > t) t = c.createdAt;
   });
   return t;
 }
@@ -2909,7 +3067,9 @@ let lastSyncedStateHash = null;
 function stateSyncHash(s){
   // 輕量雜湊：有改動才自動上傳
   try{
-    return String(stateContentScore(s)) + ':' + (s.books || []).map(b => b.updatedAt || 0).join(',');
+    const bookTs = (s.books || []).map(b => b.updatedAt || 0).join(',');
+    const cardTs = (s.cards || []).map(c => c.updatedAt || 0).join(',');
+    return String(stateContentScore(s)) + ':' + bookTs + ':' + cardTs;
   } catch(e){ return String(Date.now()); }
 }
 
@@ -4578,6 +4738,237 @@ document.querySelectorAll('.trash-tab').forEach(btn => {
     trashTab = btn.dataset.trashTab || 'all';
     renderTrash();
   };
+});
+
+/* ================= 獨立卡片庫（素材） ================= */
+let cardFilterTag = null;
+let cardEditingId = null;
+
+function parseCardTagsInput(raw){
+  return String(raw || '')
+    .split(/[,，\s]+/)
+    .map(t => t.replace(/^#/, '').trim())
+    .filter(Boolean);
+}
+
+function cardTagList(card){
+  if(!card) return [];
+  if(Array.isArray(card.tags)) return card.tags.map(t => String(t).trim()).filter(Boolean);
+  if(typeof card.tags === 'string') return parseCardTagsInput(card.tags);
+  return [];
+}
+
+function allCardTags(){
+  const set = new Set();
+  (state.cards || []).forEach(c => cardTagList(c).forEach(t => set.add(t)));
+  return [...set].sort((a, b) => a.localeCompare(b, 'zh'));
+}
+
+function parseCardSearchQuery(raw){
+  const q = (raw || '').trim();
+  if(!q) return { mode: 'all', term: '' };
+  if(q.charAt(0) === '#') return { mode: 'tag', term: q.slice(1).trim().toLowerCase() };
+  return { mode: 'text', term: q.toLowerCase() };
+}
+
+function cardMatchesQuery(card, raw){
+  const { mode, term } = parseCardSearchQuery(raw);
+  if(!term && mode === 'all') return true;
+  if(mode === 'tag'){
+    return cardTagList(card).some(t => t.toLowerCase().indexOf(term) !== -1);
+  }
+  const title = (card.title || '').toLowerCase();
+  const body = (card.body || '').toLowerCase();
+  const tags = cardTagList(card).join(' ').toLowerCase();
+  const notes = (card.notes || []).join(' ').toLowerCase();
+  return title.indexOf(term) !== -1 || body.indexOf(term) !== -1 ||
+    tags.indexOf(term) !== -1 || notes.indexOf(term) !== -1;
+}
+
+function formatCardTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())}`;
+}
+
+function renderCardTagChips(){
+  const section = document.getElementById('cardTagChipsSection');
+  const row = document.getElementById('cardTagChipsRow');
+  if(!section || !row) return;
+  const tags = allCardTags();
+  if(tags.length === 0){
+    section.style.display = 'none';
+    row.innerHTML = '';
+    return;
+  }
+  section.style.display = 'block';
+  row.innerHTML = tags.map(t =>
+    `<button type="button" class="lib-chip${cardFilterTag === t ? ' active' : ''}" data-card-tag="${escapeHtml(t)}">#${escapeHtml(t)}</button>`
+  ).join('');
+  row.querySelectorAll('[data-card-tag]').forEach(btn => {
+    btn.onclick = () => {
+      const t = btn.getAttribute('data-card-tag');
+      cardFilterTag = (cardFilterTag === t) ? null : t;
+      renderCards();
+    };
+  });
+}
+
+function renderCards(){
+  normalizeSettings();
+  renderCardTagChips();
+  const list = document.getElementById('cardsList');
+  if(!list) return;
+  const q = (document.getElementById('cardsSearchInput') && document.getElementById('cardsSearchInput').value) || '';
+  let cards = (state.cards || []).slice();
+  cards = cards.filter(c => cardMatchesQuery(c, q));
+  if(cardFilterTag){
+    cards = cards.filter(c => cardTagList(c).indexOf(cardFilterTag) !== -1);
+  }
+  cards.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+  if(cards.length === 0){
+    list.innerHTML = '<div class="lib-empty">還沒有卡片。點「新建卡片」記下場景、對話或閃念。</div>';
+    return;
+  }
+  list.innerHTML = '';
+  cards.forEach(card => {
+    const tags = cardTagList(card);
+    const notes = (card.notes || []).map(n => String(n).trim()).filter(Boolean);
+    const item = document.createElement('div');
+    item.className = 'card-item';
+    item.innerHTML = `
+      <div class="card-item-head">
+        <div class="card-item-title">${escapeHtml(card.title || '（無標題）')}</div>
+        <div class="card-item-meta">${formatCardTime(card.updatedAt)}</div>
+      </div>
+      <div class="card-item-body">${escapeHtml(card.body || '')}</div>
+      ${tags.length ? `<div class="card-item-tags">${tags.map(t => `<span class="card-tag-pill">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      ${notes.length ? `<ul class="card-item-notes">${notes.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>` : ''}
+      <div class="card-item-acts">
+        <button type="button" data-act="edit">編輯</button>
+        <button type="button" data-act="copy">複製正文</button>
+        <button type="button" data-act="note">加附註</button>
+        <button type="button" data-act="del">刪除</button>
+      </div>`;
+    item.querySelector('[data-act="edit"]').onclick = () => openCardEditor(card.id);
+    item.querySelector('[data-act="copy"]').onclick = async () => {
+      const text = card.body || '';
+      try{
+        await navigator.clipboard.writeText(text);
+        alert('已複製到剪貼簿');
+      } catch(e){
+        prompt('複製以下內容：', text);
+      }
+    };
+    item.querySelector('[data-act="note"]').onclick = () => {
+      const line = prompt('取用附註（可多條，例如：《機器人養老》第一章已取用）');
+      if(line == null) return;
+      const t = line.trim();
+      if(!t) return;
+      if(!Array.isArray(card.notes)) card.notes = [];
+      card.notes.push(t);
+      card.updatedAt = Date.now();
+      schedulePersist();
+      renderCards();
+    };
+    item.querySelector('[data-act="del"]').onclick = () => {
+      if(!confirm(`確定刪除卡片「${card.title || '無標題'}」？`)) return;
+      state.cards = state.cards.filter(c => c.id !== card.id);
+      schedulePersist();
+      renderCards();
+    };
+    list.appendChild(item);
+  });
+}
+
+function openCardEditor(id){
+  cardEditingId = id || null;
+  const card = id ? (state.cards || []).find(c => c.id === id) : null;
+  document.getElementById('cardEditorTitle').textContent = card ? '編輯卡片' : '新建卡片';
+  document.getElementById('cardTitleInput').value = card ? (card.title || '') : '';
+  document.getElementById('cardBodyInput').value = card ? (card.body || '') : '';
+  document.getElementById('cardTagsInput').value = card ? cardTagList(card).join(', ') : '';
+  const editor = document.getElementById('cardNotesEditor');
+  editor.innerHTML = '';
+  const notes = card && Array.isArray(card.notes) ? card.notes : [];
+  const ensure = notes.length ? notes : [''];
+  ensure.forEach(n => {
+    const row = document.createElement('div');
+    row.className = 'card-note-row';
+    row.innerHTML = `<input type="text" placeholder="例如：《某文》第一章已取用" value="${escapeHtml(n)}" /><button type="button" data-rm>刪</button>`;
+    row.querySelector('[data-rm]').onclick = () => row.remove();
+    editor.appendChild(row);
+  });
+  document.getElementById('cardEditorBackdrop').style.display = 'flex';
+  document.getElementById('cardTitleInput').focus();
+}
+
+function closeCardEditor(){
+  document.getElementById('cardEditorBackdrop').style.display = 'none';
+  cardEditingId = null;
+}
+
+function saveCardEditor(){
+  const title = document.getElementById('cardTitleInput').value.trim();
+  const body = document.getElementById('cardBodyInput').value;
+  const tags = parseCardTagsInput(document.getElementById('cardTagsInput').value);
+  const notes = [...document.getElementById('cardNotesEditor').querySelectorAll('input')]
+    .map(inp => inp.value.trim())
+    .filter(Boolean);
+
+  if(!title && !body.trim()){
+    alert('請至少填標題或內容');
+    return;
+  }
+  normalizeSettings();
+  if(cardEditingId){
+    const card = state.cards.find(c => c.id === cardEditingId);
+    if(!card){ closeCardEditor(); return; }
+    card.title = title;
+    card.body = body;
+    card.tags = tags;
+    card.notes = notes;
+    card.updatedAt = Date.now();
+  } else {
+    const card = freshCard();
+    card.title = title;
+    card.body = body;
+    card.tags = tags;
+    card.notes = notes;
+    state.cards.unshift(card);
+  }
+  schedulePersist();
+  closeCardEditor();
+  renderCards();
+}
+
+document.getElementById('openCardsBtn').onclick = () => {
+  cardFilterTag = null;
+  const input = document.getElementById('cardsSearchInput');
+  if(input) input.value = '';
+  showCardsPage();
+};
+document.getElementById('cardsBackBtn').onclick = () => showLibrary();
+document.getElementById('newCardBtn').onclick = () => openCardEditor(null);
+document.getElementById('cardEditorCancelBtn').onclick = () => closeCardEditor();
+document.getElementById('cardEditorSaveBtn').onclick = () => saveCardEditor();
+document.getElementById('cardAddNoteBtn').onclick = () => {
+  const editor = document.getElementById('cardNotesEditor');
+  const row = document.createElement('div');
+  row.className = 'card-note-row';
+  row.innerHTML = `<input type="text" placeholder="例如：《某文》第一章已取用气氛" value="" /><button type="button" data-rm>刪</button>`;
+  row.querySelector('[data-rm]').onclick = () => row.remove();
+  editor.appendChild(row);
+  row.querySelector('input').focus();
+};
+document.getElementById('cardEditorBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'cardEditorBackdrop') closeCardEditor();
+});
+document.getElementById('cardsSearchInput').addEventListener('input', () => {
+  clearTimeout(window._cardsSearchTimer);
+  window._cardsSearchTimer = setTimeout(() => renderCards(), 150);
 });
 
 /* ================= Google Drive sync ================= */
