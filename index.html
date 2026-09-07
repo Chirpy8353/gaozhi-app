@@ -1115,6 +1115,33 @@
     background:transparent; border:1px solid var(--line); color:var(--ink-soft);
   }
   .card-item-acts button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  /* 全局懸浮：任意頁新建卡片 */
+  #fabNewCard{
+    display:none;
+    position:fixed;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    z-index:45;
+    width:52px; height:52px;
+    border-radius:50%;
+    border:1px solid #E4C3B6;
+    background:var(--vermillion);
+    color:#fff;
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+    box-shadow: 0 4px 14px rgba(42,39,33,0.22);
+    font-family: inherit;
+    padding:0;
+  }
+  #fabNewCard:hover{ filter:brightness(1.05); }
+  #fabNewCard:active{ transform:scale(0.96); }
+  #appRoot.active #fabNewCard{ display:flex; align-items:center; justify-content:center; }
+  #appRoot.active.fab-hidden #fabNewCard{ display:none; }
+  @media (max-width: 640px){
+    #fabNewCard{ width:48px; height:48px; font-size:20px; right:14px; bottom:16px; }
+  }
+
   #cardEditorBackdrop{
     display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
     z-index:55; align-items:center; justify-content:center;
@@ -1647,6 +1674,8 @@
   <div id="cardsList"></div>
 </div>
 
+<button type="button" id="fabNewCard" title="新建卡片" aria-label="新建卡片">＋</button>
+
 <div id="cardEditorBackdrop">
   <div id="cardEditorModal">
     <h3 id="cardEditorTitle">新建卡片</h3>
@@ -2005,7 +2034,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-04 09:40';
+const APP_BUILD = '2026-09-07 15:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -4884,6 +4913,8 @@ function renderCards(){
 }
 
 function openCardEditor(id){
+  if(!state) return;
+  normalizeSettings();
   cardEditingId = id || null;
   const card = id ? (state.cards || []).find(c => c.id === id) : null;
   document.getElementById('cardEditorTitle').textContent = card ? '編輯卡片' : '新建卡片';
@@ -4902,11 +4933,13 @@ function openCardEditor(id){
     editor.appendChild(row);
   });
   document.getElementById('cardEditorBackdrop').style.display = 'flex';
+  document.getElementById('appRoot').classList.add('fab-hidden');
   document.getElementById('cardTitleInput').focus();
 }
 
 function closeCardEditor(){
   document.getElementById('cardEditorBackdrop').style.display = 'none';
+  document.getElementById('appRoot').classList.remove('fab-hidden');
   cardEditingId = null;
 }
 
@@ -4952,6 +4985,7 @@ document.getElementById('openCardsBtn').onclick = () => {
 };
 document.getElementById('cardsBackBtn').onclick = () => showLibrary();
 document.getElementById('newCardBtn').onclick = () => openCardEditor(null);
+document.getElementById('fabNewCard').onclick = () => openCardEditor(null);
 document.getElementById('cardEditorCancelBtn').onclick = () => closeCardEditor();
 document.getElementById('cardEditorSaveBtn').onclick = () => saveCardEditor();
 document.getElementById('cardAddNoteBtn').onclick = () => {
