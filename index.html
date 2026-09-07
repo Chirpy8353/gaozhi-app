@@ -13,7 +13,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root{
+  :root, html[data-theme="original"]{
     --paper: #FAF6EE;
     --paper-note: #F1EAD9;
     --ink: #2A2721;
@@ -27,6 +27,87 @@
     --sidebar: #F3EEE1;
     --white: #FFFEFB;
     --radius: 3px;
+    --mosaic-a: transparent;
+    --mosaic-b: transparent;
+    --mosaic-c: transparent;
+    --mosaic-d: transparent;
+    --paper-glass: rgba(255, 254, 251, 0.5);
+  }
+  /* 墨夜：中灰深色，非純黑 */
+  html[data-theme="moye"]{
+    --paper: #3A3F46;
+    --paper-note: #454B54;
+    --ink: #E6E2DA;
+    --ink-soft: #B0AAA0;
+    --ink-faint: #8A8580;
+    --line: #555B64;
+    --line-soft: #4A5058;
+    --vermillion: #C4786A;
+    --vermillion-soft: #D49A8E;
+    --vermillion-bg: #4A3E3C;
+    --sidebar: #2F343C;
+    --white: #32383F;
+    --paper-glass: rgba(50, 56, 63, 0.55);
+  }
+  /* 青瓷：冷色 + 中等馬賽克 */
+  html[data-theme="qingci"]{
+    --paper: #E4EBE8;
+    --paper-note: #D5E0DC;
+    --ink: #2C3836;
+    --ink-soft: #5F716C;
+    --ink-faint: #8A9A95;
+    --line: #B8C9C3;
+    --line-soft: #C9D6D1;
+    --vermillion: #3D7A72;
+    --vermillion-soft: #5A9A90;
+    --vermillion-bg: #D5E8E3;
+    --sidebar: #DCE6E2;
+    --white: #F2F7F5;
+    --mosaic-a: #C5D9D2;
+    --mosaic-b: #D8E6E1;
+    --mosaic-c: #E8F0ED;
+    --mosaic-d: #B8D0C8;
+    --paper-glass: rgba(242, 247, 245, 0.5);
+  }
+  /* 向日葵：參考色 #542B11 #A47106 #B79C29 #D4B731 #95CDBB */
+  html[data-theme="xiangrikui"]{
+    --paper: #F3E9C8;
+    --paper-note: #E8D9A8;
+    --ink: #542B11;
+    --ink-soft: #8A5A28;
+    --ink-faint: #A47106;
+    --line: #C4A84A;
+    --line-soft: #D4B731;
+    --vermillion: #95CDBB;
+    --vermillion-soft: #7BB8A6;
+    --vermillion-bg: #D4EDE5;
+    --sidebar: #EDE0B0;
+    --white: #FFF8E7;
+    --mosaic-a: #E8D48A;
+    --mosaic-b: #F0E4B0;
+    --mosaic-c: #D4B731;
+    --mosaic-d: #C5D9C8;
+    --paper-glass: rgba(255, 248, 231, 0.5);
+  }
+  /* 有馬賽克的主題：body 鋪中等格（約 28px，接近稿紙格） */
+  html.theme-mosaic body{
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(to right, var(--mosaic-a) 50%, var(--mosaic-b) 50%),
+      linear-gradient(to right, var(--mosaic-c) 50%, var(--mosaic-d) 50%);
+    background-size: 56px 28px;
+    background-position: 0 0, 0 28px;
+    background-repeat: repeat;
+  }
+  html.theme-mosaic #library,
+  html.theme-mosaic #cardsPage,
+  html.theme-mosaic #trashPage,
+  html.theme-mosaic #main,
+  html.theme-mosaic #sidebar{
+    background-color: transparent;
+  }
+  html.theme-mosaic #sidebar{
+    background-color: color-mix(in srgb, var(--sidebar) 88%, transparent);
   }
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; height:100%; }
@@ -879,7 +960,7 @@
   }
 
   /* ---------- Grid paper background（稿紙格，偏美觀） ---------- */
-  /* 格線鋪滿到邊框：中間是密封方格，頭尾可被裁成半格（如附圖右側）；文字另留內邊距不頂邊 */
+  /* 格線鋪滿到邊框；馬賽克主題下紙面用 --paper-glass（約 50% 透明）透出底下色塊 */
   #rows.grid-mode .left-cell{
     --cell: 28px;
     --grid-line: var(--line-soft);
@@ -904,9 +985,21 @@
         var(--grid-line) var(--cell)
       );
     background-size: 100% var(--cell), var(--cell) 100%;
-    /* 豎線右移：最左約 1/3 不完整格，其後第一個完整格 */
     background-position: 0 0, calc(var(--cell) / 3) 0;
     background-attachment: local;
+  }
+  html.theme-mosaic #rows.grid-mode .left-cell{
+    background-color: var(--paper-glass);
+  }
+  /* 馬賽克主題：#rows 區也鋪同一套馬賽克，方便半透明稿紙透出 */
+  html.theme-mosaic #rows{
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(to right, var(--mosaic-a) 50%, var(--mosaic-b) 50%),
+      linear-gradient(to right, var(--mosaic-c) 50%, var(--mosaic-d) 50%);
+    background-size: 56px 28px;
+    background-position: 0 0, 0 28px;
+    background-repeat: repeat;
   }
   #rows.grid-mode .left-cell textarea{
     font-size: 15px !important;
@@ -1970,7 +2063,16 @@
   <div id="settingsModal">
     <h3>設定</h3>
     <div class="setting-row">
-      <span>格子背景<small>正文欄位顯示稿紙格線</small></span>
+      <span>界面配色<small>原稿／墨夜／青瓷／向日葵（後兩者有馬賽克底）</small></span>
+      <select id="themeSelect" style="width:110px; padding:6px 8px; font-family:inherit; font-size:12.5px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);">
+        <option value="original">原稿</option>
+        <option value="moye">墨夜</option>
+        <option value="qingci">青瓷</option>
+        <option value="xiangrikui">向日葵</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span>格子背景<small>正文欄位顯示稿紙格線；青瓷／向日葵下紙約半透明以透出馬賽克</small></span>
       <label class="switch">
         <input type="checkbox" id="toggleGridBg" />
         <span class="switch-track"></span>
@@ -2034,7 +2136,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-07 15:50';
+const APP_BUILD = '2026-09-07 16:25';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2108,6 +2210,8 @@ function normalizeSettings(){
   if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, trashRetentionDays: 30, sensitiveWords: [] };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
+  const okThemes = { original:1, moye:1, qingci:1, xiangrikui:1 };
+  if(!state.settings.theme || !okThemes[state.settings.theme]) state.settings.theme = 'original';
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
   if(typeof state.settings.googleConnected !== 'boolean') state.settings.googleConnected = false;
@@ -4163,6 +4267,7 @@ function enterApp(loadedState){
   state = loadedState;
   idSeed = 1;
   normalizeSettings();
+  applyTheme(state.settings.theme);
   if(purgeOldTrash()) schedulePersist();
   document.getElementById('gate').style.display = 'none';
   document.getElementById('appRoot').classList.add('active');
@@ -4393,11 +4498,26 @@ document.getElementById('doChangePw').onclick = async () => {
 };
 
 /* ================= settings: grid background + key sound ================= */
+function applyTheme(themeId){
+  const t = themeId || 'original';
+  const mosaic = (t === 'qingci' || t === 'xiangrikui');
+  document.documentElement.setAttribute('data-theme', t);
+  document.documentElement.classList.toggle('theme-mosaic', mosaic);
+  try{
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if(meta){
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#FAF6EE';
+      meta.setAttribute('content', bg);
+    }
+  } catch(e){}
+}
+
 function openSettingsModal(){
   normalizeSettings();
   document.getElementById('toggleGridBg').checked = !!(state.settings && state.settings.gridBg);
   document.getElementById('toggleKeySound').checked = !!(state.settings && state.settings.keySound);
   document.getElementById('toggleAutoSync').checked = !!(state.settings && state.settings.autoSync);
+  document.getElementById('themeSelect').value = state.settings.theme || 'original';
   document.getElementById('dailyGoalInput').value = state.settings.dailyGoal;
   document.getElementById('trashRetentionInput').value = getTrashRecentDays();
   try{
@@ -4442,6 +4562,12 @@ document.getElementById('toggleGridBg').addEventListener('change', e => {
   normalizeSettings();
   state.settings.gridBg = e.target.checked;
   document.getElementById('rows').classList.toggle('grid-mode', e.target.checked);
+  schedulePersist();
+});
+document.getElementById('themeSelect').addEventListener('change', e => {
+  normalizeSettings();
+  state.settings.theme = e.target.value || 'original';
+  applyTheme(state.settings.theme);
   schedulePersist();
 });
 document.getElementById('toggleKeySound').addEventListener('change', async e => {
