@@ -31,7 +31,7 @@
     --mosaic-b: transparent;
     --mosaic-c: transparent;
     --mosaic-d: transparent;
-    --paper-glass: rgba(255, 254, 251, 0.5);
+    --paper-glass: rgba(255, 254, 251, 0.75);
   }
   /* 墨夜：中灰深色，非純黑 */
   html[data-theme="moye"]{
@@ -47,7 +47,7 @@
     --vermillion-bg: #4A3E3C;
     --sidebar: #2F343C;
     --white: #32383F;
-    --paper-glass: rgba(50, 56, 63, 0.55);
+    --paper-glass: rgba(50, 56, 63, 0.75);
   }
   /* 青瓷：冷色 + 亂序小色差馬賽克（約 28px 格） */
   html[data-theme="qingci"]{
@@ -63,7 +63,7 @@
     --vermillion-bg: #D5E8E3;
     --sidebar: #DCE6E2;
     --white: #F2F7F5;
-    --paper-glass: rgba(242, 247, 245, 0.5);
+    --paper-glass: rgba(242, 247, 245, 0.75);
   }
   /* 向日葵：參考色 #542B11 #A47106 #B79C29 #D4B731 #95CDBB */
   html[data-theme="xiangrikui"]{
@@ -79,7 +79,7 @@
     --vermillion-bg: #D4EDE5;
     --sidebar: #EDE0B0;
     --white: #FFF8E7;
-    --paper-glass: rgba(255, 248, 231, 0.5);
+    --paper-glass: rgba(255, 248, 231, 0.75);
   }
   /*
     馬賽克：4×4 亂序色塊（每格 28px），不是「一色一行」的兩色交錯。
@@ -961,7 +961,7 @@
   }
 
   /* ---------- Grid paper background（稿紙格，偏美觀） ---------- */
-  /* 格線鋪滿到邊框；馬賽克主題下紙面用 --paper-glass（約 50% 透明）透出底下色塊 */
+  /* 格線鋪滿到邊框；馬賽克主題下紙面用 --paper-glass（約 75% 不透明）透出底下色塊 */
   #rows.grid-mode .left-cell{
     --cell: 28px;
     --grid-line: var(--line-soft);
@@ -2127,7 +2127,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-08 13:15';
+const APP_BUILD = '2026-09-08 13:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
