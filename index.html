@@ -49,7 +49,7 @@
     --white: #32383F;
     --paper-glass: rgba(50, 56, 63, 0.55);
   }
-  /* 青瓷：冷色 + 中等馬賽克 */
+  /* 青瓷：冷色 + 亂序小色差馬賽克（約 28px 格） */
   html[data-theme="qingci"]{
     --paper: #E4EBE8;
     --paper-note: #D5E0DC;
@@ -63,10 +63,6 @@
     --vermillion-bg: #D5E8E3;
     --sidebar: #DCE6E2;
     --white: #F2F7F5;
-    --mosaic-a: #C5D9D2;
-    --mosaic-b: #D8E6E1;
-    --mosaic-c: #E8F0ED;
-    --mosaic-d: #B8D0C8;
     --paper-glass: rgba(242, 247, 245, 0.5);
   }
   /* 向日葵：參考色 #542B11 #A47106 #B79C29 #D4B731 #95CDBB */
@@ -83,20 +79,24 @@
     --vermillion-bg: #D4EDE5;
     --sidebar: #EDE0B0;
     --white: #FFF8E7;
-    --mosaic-a: #E8D48A;
-    --mosaic-b: #F0E4B0;
-    --mosaic-c: #D4B731;
-    --mosaic-d: #C5D9C8;
     --paper-glass: rgba(255, 248, 231, 0.5);
   }
-  /* 有馬賽克的主題：body 鋪中等格（約 28px，接近稿紙格） */
-  html.theme-mosaic body{
-    background-color: var(--paper);
-    background-image:
-      linear-gradient(to right, var(--mosaic-a) 50%, var(--mosaic-b) 50%),
-      linear-gradient(to right, var(--mosaic-c) 50%, var(--mosaic-d) 50%);
-    background-size: 56px 28px;
-    background-position: 0 0, 0 28px;
+  /*
+    馬賽克：4×4 亂序色塊（每格 28px），不是「一色一行」的兩色交錯。
+    青瓷／向日葵各用獨立 SVG pattern。
+  */
+  html[data-theme="qingci"].theme-mosaic body,
+  html[data-theme="qingci"].theme-mosaic #rows{
+    background-color: #D8E6E1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23C5D9D2'/%3E%3Crect x='28' width='28' height='28' fill='%23E8F0ED'/%3E%3Crect x='56' width='28' height='28' fill='%23B8D0C8'/%3E%3Crect x='84' width='28' height='28' fill='%23D4E4DE'/%3E%3Crect y='28' width='28' height='28' fill='%23DCE8E4'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23AFC9C0'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23E2EEEA'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23C9DBD4'/%3E%3Crect y='56' width='28' height='28' fill='%23B5CEC5'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%23D0E0DA'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23E5F0EC'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23C0D6CE'/%3E%3Crect y='84' width='28' height='28' fill='%23E0ECE8'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23CADCD5'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23B2CBC2'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23D6E5DF'/%3E%3C/svg%3E");
+    background-size: 112px 112px;
+    background-repeat: repeat;
+  }
+  html[data-theme="xiangrikui"].theme-mosaic body,
+  html[data-theme="xiangrikui"].theme-mosaic #rows{
+    background-color: #F0E4B0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23E8D48A'/%3E%3Crect x='28' width='28' height='28' fill='%23F5EBC0'/%3E%3Crect x='56' width='28' height='28' fill='%23D4B731'/%3E%3Crect x='84' width='28' height='28' fill='%23C5D9C8'/%3E%3Crect y='28' width='28' height='28' fill='%23F0E4B0'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23B79C29'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23EDE0A0'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23D4E5D0'/%3E%3Crect y='56' width='28' height='28' fill='%23D4B731'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%2395CDBB'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23E8D48A'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23F2E8B8'/%3E%3Crect y='84' width='28' height='28' fill='%23C8D8C0'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23E0D090'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23A47106'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23E8D48A'/%3E%3C/svg%3E");
+    background-size: 112px 112px;
     background-repeat: repeat;
   }
   html.theme-mosaic #library,
@@ -990,16 +990,6 @@
   }
   html.theme-mosaic #rows.grid-mode .left-cell{
     background-color: var(--paper-glass);
-  }
-  /* 馬賽克主題：#rows 區也鋪同一套馬賽克，方便半透明稿紙透出 */
-  html.theme-mosaic #rows{
-    background-color: var(--paper);
-    background-image:
-      linear-gradient(to right, var(--mosaic-a) 50%, var(--mosaic-b) 50%),
-      linear-gradient(to right, var(--mosaic-c) 50%, var(--mosaic-d) 50%);
-    background-size: 56px 28px;
-    background-position: 0 0, 0 28px;
-    background-repeat: repeat;
   }
   #rows.grid-mode .left-cell textarea{
     font-size: 15px !important;
@@ -2136,7 +2126,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-07 16:25';
+const APP_BUILD = '2026-09-07 19:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
