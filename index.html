@@ -2077,7 +2077,7 @@
   <div id="settingsModal">
     <h3>設定</h3>
     <div class="setting-row">
-      <span>界面配色<small>原稿／墨夜／青瓷／向日葵／灰藍（後三套有淺馬賽克）</small></span>
+      <span>界面配色<small>原稿／墨夜／青瓷／向日葵／灰藍（青瓷、向日葵有淺馬賽克；灰藍為純配色）</small></span>
       <select id="themeSelect" style="width:110px; padding:6px 8px; font-family:inherit; font-size:12.5px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);">
         <option value="original">原稿</option>
         <option value="moye">墨夜</option>
@@ -2151,7 +2151,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-08 15:40';
+const APP_BUILD = '2026-09-09 12:25';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -4515,7 +4515,7 @@ document.getElementById('doChangePw').onclick = async () => {
 /* ================= settings: grid background + key sound ================= */
 function applyTheme(themeId){
   const t = themeId || 'original';
-  const mosaic = (t === 'qingci' || t === 'xiangrikui' || t === 'huilan');
+  const mosaic = (t === 'qingci' || t === 'xiangrikui');
   document.documentElement.setAttribute('data-theme', t);
   document.documentElement.classList.toggle('theme-mosaic', mosaic);
   try{
