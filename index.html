@@ -81,9 +81,24 @@
     --white: #FFF8E7;
     --paper-glass: rgba(255, 248, 231, 0.75);
   }
+  /* 灰藍：大象灰 #908D87 + 勿忘我藍 #8DAFC1 */
+  html[data-theme="huilan"]{
+    --paper: #E6E9EC;
+    --paper-note: #D8DCE0;
+    --ink: #3A3835;
+    --ink-soft: #6E6B66;
+    --ink-faint: #908D87;
+    --line: #B5B2AD;
+    --line-soft: #C8C5C0;
+    --vermillion: #8DAFC1;
+    --vermillion-soft: #A3C0CF;
+    --vermillion-bg: #DCE8EF;
+    --sidebar: #D5D3CF;
+    --white: #F3F5F7;
+    --paper-glass: rgba(243, 245, 247, 0.75);
+  }
   /*
     馬賽克：4×4 亂序色塊（每格 28px），不是「一色一行」的兩色交錯。
-    青瓷／向日葵各用獨立 SVG pattern。
   */
   /* 色塊向白混合約 80%，極淺仍可辨亂序 */
   html[data-theme="qingci"].theme-mosaic body,
@@ -97,6 +112,14 @@
   html[data-theme="xiangrikui"].theme-mosaic #rows{
     background-color: #FBF8EE;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23F9F4E3'/%3E%3Crect x='28' width='28' height='28' fill='%23FCF9F0'/%3E%3Crect x='56' width='28' height='28' fill='%23F5EED4'/%3E%3Crect x='84' width='28' height='28' fill='%23F3F7F4'/%3E%3Crect y='28' width='28' height='28' fill='%23FAF6E8'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23F0E8C8'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23F9F5E6'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23F5F8F4'/%3E%3Crect y='56' width='28' height='28' fill='%23F5EED4'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%23E8F3EF'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23F9F4E3'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23FBF8EC'/%3E%3Crect y='84' width='28' height='28' fill='%23F4F7F1'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23F7F1DC'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23EBDFB8'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23F9F4E3'/%3E%3C/svg%3E");
+    background-size: 112px 112px;
+    background-repeat: repeat;
+  }
+  /* 灰藍馬賽克：極淺的大象灰／勿忘我藍亂序 */
+  html[data-theme="huilan"].theme-mosaic body,
+  html[data-theme="huilan"].theme-mosaic #rows{
+    background-color: #F0F2F4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23E8EAEB'/%3E%3Crect x='28' width='28' height='28' fill='%23EEF2F5'/%3E%3Crect x='56' width='28' height='28' fill='%23E4E6E5'/%3E%3Crect x='84' width='28' height='28' fill='%23F0F4F6'/%3E%3Crect y='28' width='28' height='28' fill='%23EDF1F4'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23E2E4E3'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23F2F5F7'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23E9ECEB'/%3E%3Crect y='56' width='28' height='28' fill='%23E5E8E7'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%23EEF3F6'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23F4F6F7'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23E7E9E8'/%3E%3Crect y='84' width='28' height='28' fill='%23F0F3F5'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23EAECEC'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23E3E5E4'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23EEF2F5'/%3E%3C/svg%3E");
     background-size: 112px 112px;
     background-repeat: repeat;
   }
@@ -2054,12 +2077,13 @@
   <div id="settingsModal">
     <h3>設定</h3>
     <div class="setting-row">
-      <span>界面配色<small>原稿／墨夜／青瓷／向日葵（後兩者有馬賽克底）</small></span>
+      <span>界面配色<small>原稿／墨夜／青瓷／向日葵／灰藍（後三套有淺馬賽克）</small></span>
       <select id="themeSelect" style="width:110px; padding:6px 8px; font-family:inherit; font-size:12.5px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);">
         <option value="original">原稿</option>
         <option value="moye">墨夜</option>
         <option value="qingci">青瓷</option>
         <option value="xiangrikui">向日葵</option>
+        <option value="huilan">灰藍</option>
       </select>
     </div>
     <div class="setting-row">
@@ -2127,7 +2151,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-08 13:50';
+const APP_BUILD = '2026-09-08 15:40';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2201,7 +2225,7 @@ function normalizeSettings(){
   if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, trashRetentionDays: 30, sensitiveWords: [] };
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
-  const okThemes = { original:1, moye:1, qingci:1, xiangrikui:1 };
+  const okThemes = { original:1, moye:1, qingci:1, xiangrikui:1, huilan:1 };
   if(!state.settings.theme || !okThemes[state.settings.theme]) state.settings.theme = 'original';
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
@@ -4491,7 +4515,7 @@ document.getElementById('doChangePw').onclick = async () => {
 /* ================= settings: grid background + key sound ================= */
 function applyTheme(themeId){
   const t = themeId || 'original';
-  const mosaic = (t === 'qingci' || t === 'xiangrikui');
+  const mosaic = (t === 'qingci' || t === 'xiangrikui' || t === 'huilan');
   document.documentElement.setAttribute('data-theme', t);
   document.documentElement.classList.toggle('theme-mosaic', mosaic);
   try{
