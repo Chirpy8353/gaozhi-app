@@ -81,21 +81,53 @@
     --white: #FFF8E7;
     --paper-glass: rgba(255, 248, 231, 0.75);
   }
-  /* 灰藍：大象灰 #908D87 + 勿忘我藍 #8DAFC1 */
+  /* 灰藍·冷：紙偏藍灰，強調勿忘我藍 #8DAFC1，輔色大象灰 #908D87 */
   html[data-theme="huilan"]{
-    --paper: #E6E9EC;
-    --paper-note: #D8DCE0;
-    --ink: #3A3835;
-    --ink-soft: #6E6B66;
+    --paper: #E4E9EE;
+    --paper-note: #D5DCE4;
+    --ink: #2F2E2C;
+    --ink-soft: #5C5A56;
     --ink-faint: #908D87;
-    --line: #B5B2AD;
-    --line-soft: #C8C5C0;
+    --line: #A8B5BE;
+    --line-soft: #C5CED6;
     --vermillion: #8DAFC1;
     --vermillion-soft: #A3C0CF;
-    --vermillion-bg: #DCE8EF;
-    --sidebar: #D5D3CF;
-    --white: #F3F5F7;
-    --paper-glass: rgba(243, 245, 247, 0.75);
+    --vermillion-bg: #D4E2EB;
+    --sidebar: #D0D5DA;
+    --white: #F2F5F8;
+    --paper-glass: rgba(242, 245, 248, 0.75);
+  }
+  /* 灰藍·霧：紙偏暖灰，雙色更克制 */
+  html[data-theme="huilan-wu"]{
+    --paper: #EBE9E6;
+    --paper-note: #E0DDD8;
+    --ink: #343230;
+    --ink-soft: #6A6762;
+    --ink-faint: #908D87;
+    --line: #B8B5B0;
+    --line-soft: #CBC8C3;
+    --vermillion: #7A9AAB;
+    --vermillion-soft: #908D87;
+    --vermillion-bg: #E0E4E6;
+    --sidebar: #DDDAD5;
+    --white: #F5F4F2;
+    --paper-glass: rgba(245, 244, 242, 0.75);
+  }
+  /* 灰粉：灰底 + 灰粉強調，次要可用勿忘我藍 */
+  html[data-theme="huifen"]{
+    --paper: #EDE8E9;
+    --paper-note: #E2DBDC;
+    --ink: #3A3434;
+    --ink-soft: #6E6565;
+    --ink-faint: #9A8F8F;
+    --line: #C4B6B6;
+    --line-soft: #D4C8C8;
+    --vermillion: #C4A8A9;
+    --vermillion-soft: #8DAFC1;
+    --vermillion-bg: #EDE4E5;
+    --sidebar: #E0D8D9;
+    --white: #F7F3F4;
+    --paper-glass: rgba(247, 243, 244, 0.75);
   }
   /*
     馬賽克：4×4 亂序色塊（每格 28px），不是「一色一行」的兩色交錯。
@@ -112,14 +144,6 @@
   html[data-theme="xiangrikui"].theme-mosaic #rows{
     background-color: #FBF8EE;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23F9F4E3'/%3E%3Crect x='28' width='28' height='28' fill='%23FCF9F0'/%3E%3Crect x='56' width='28' height='28' fill='%23F5EED4'/%3E%3Crect x='84' width='28' height='28' fill='%23F3F7F4'/%3E%3Crect y='28' width='28' height='28' fill='%23FAF6E8'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23F0E8C8'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23F9F5E6'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23F5F8F4'/%3E%3Crect y='56' width='28' height='28' fill='%23F5EED4'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%23E8F3EF'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23F9F4E3'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23FBF8EC'/%3E%3Crect y='84' width='28' height='28' fill='%23F4F7F1'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23F7F1DC'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23EBDFB8'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23F9F4E3'/%3E%3C/svg%3E");
-    background-size: 112px 112px;
-    background-repeat: repeat;
-  }
-  /* 灰藍馬賽克：極淺的大象灰／勿忘我藍亂序 */
-  html[data-theme="huilan"].theme-mosaic body,
-  html[data-theme="huilan"].theme-mosaic #rows{
-    background-color: #F0F2F4;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112'%3E%3Crect width='28' height='28' fill='%23E8EAEB'/%3E%3Crect x='28' width='28' height='28' fill='%23EEF2F5'/%3E%3Crect x='56' width='28' height='28' fill='%23E4E6E5'/%3E%3Crect x='84' width='28' height='28' fill='%23F0F4F6'/%3E%3Crect y='28' width='28' height='28' fill='%23EDF1F4'/%3E%3Crect x='28' y='28' width='28' height='28' fill='%23E2E4E3'/%3E%3Crect x='56' y='28' width='28' height='28' fill='%23F2F5F7'/%3E%3Crect x='84' y='28' width='28' height='28' fill='%23E9ECEB'/%3E%3Crect y='56' width='28' height='28' fill='%23E5E8E7'/%3E%3Crect x='28' y='56' width='28' height='28' fill='%23EEF3F6'/%3E%3Crect x='56' y='56' width='28' height='28' fill='%23F4F6F7'/%3E%3Crect x='84' y='56' width='28' height='28' fill='%23E7E9E8'/%3E%3Crect y='84' width='28' height='28' fill='%23F0F3F5'/%3E%3Crect x='28' y='84' width='28' height='28' fill='%23EAECEC'/%3E%3Crect x='56' y='84' width='28' height='28' fill='%23E3E5E4'/%3E%3Crect x='84' y='84' width='28' height='28' fill='%23EEF2F5'/%3E%3C/svg%3E");
     background-size: 112px 112px;
     background-repeat: repeat;
   }
@@ -1222,6 +1246,144 @@
     background:transparent; border:1px solid var(--line); color:var(--ink-soft);
   }
   .card-item-acts button:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  /* ---------- 拆文／仿寫（三欄） ---------- */
+  #analysisPage{
+    display:none;
+    height:100vh; height:100dvh;
+    flex-direction:column;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  #analysisPage.active{ display:flex; }
+  .an-top{
+    flex-shrink:0;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    background:var(--sidebar);
+  }
+  .an-top .an-title{
+    font-family:"Noto Serif SC", serif;
+    font-size:15px; font-weight:600;
+    border:none; background:transparent; color:var(--ink);
+    min-width:120px; flex:1;
+    padding:4px 6px;
+  }
+  .an-top .an-title:focus{ outline:1px solid var(--vermillion-soft); border-radius:var(--radius); }
+  .an-badge{
+    font-size:10px; padding:2px 7px; border-radius:3px;
+    background:var(--vermillion-bg); color:var(--vermillion);
+    border:1px solid var(--line-soft); flex-shrink:0;
+  }
+  .an-btn{
+    font-family:inherit; font-size:11.5px; padding:5px 10px;
+    border-radius:var(--radius); cursor:pointer;
+    background:var(--white); border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .an-btn:hover{ border-color:var(--vermillion-soft); color:var(--vermillion); }
+  .an-btn.primary{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .an-btn.primary:hover{ filter:brightness(1.08); color:var(--paper); }
+  .an-btn.active{ border-color:var(--vermillion); color:var(--vermillion); background:var(--vermillion-bg); }
+  .an-cols{
+    flex:1; min-height:0;
+    display:flex; flex-direction:row;
+  }
+  .an-col{
+    display:flex; flex-direction:column;
+    min-width:0; min-height:0;
+    border-right:1px solid var(--line);
+    transition: flex 0.15s ease, width 0.15s ease;
+  }
+  .an-col:last-child{ border-right:none; }
+  .an-col.col-source{ flex:1.1; }
+  .an-col.col-outline{ flex:0.9; }
+  .an-col.col-imit{ flex:1.2; }
+  .an-col.collapsed{
+    flex:0 0 36px;
+    max-width:36px;
+  }
+  .an-col.collapsed .an-col-body{ display:none; }
+  .an-col.collapsed .an-col-head span.an-col-label{ display:none; }
+  .an-col.hidden-imit{ display:none; }
+  .an-col-head{
+    flex-shrink:0;
+    display:flex; align-items:center; gap:6px;
+    padding:8px 10px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--sidebar);
+    font-size:12px; color:var(--ink-soft);
+  }
+  .an-col-head button.an-fold{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-faint); font-size:14px; padding:2px 4px;
+    font-family:inherit;
+  }
+  .an-col-head button.an-fold:hover{ color:var(--vermillion); }
+  .an-col-body{
+    flex:1; min-height:0; overflow:auto;
+    padding:10px 12px 24px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .an-source-view{
+    white-space:pre-wrap; word-break:break-word;
+    font-family:"Noto Serif SC", serif;
+    font-size:14px; line-height:1.85; color:var(--ink);
+  }
+  .an-sec-block{ margin-bottom:18px; }
+  .an-sec-h{
+    font-size:12px; font-weight:600; color:var(--vermillion);
+    margin-bottom:6px; padding-bottom:4px;
+    border-bottom:1px dashed var(--line-soft);
+    display:flex; justify-content:space-between; gap:8px;
+  }
+  .an-sec-h .wc{ font-weight:400; color:var(--ink-faint); }
+  .an-outline-list{ margin-bottom:12px; }
+  .an-outline-item{
+    display:flex; align-items:baseline; gap:8px;
+    padding:6px 4px; font-size:12.5px;
+    border-bottom:1px solid var(--line-soft);
+    cursor:pointer;
+  }
+  .an-outline-item:hover{ background:var(--vermillion-bg); }
+  .an-outline-item .oi-title{ flex:1; color:var(--ink); }
+  .an-outline-item .oi-wc{ color:var(--ink-faint); font-size:11px; flex-shrink:0; }
+  .an-outline-notes{
+    width:100%; min-height:160px; box-sizing:border-box;
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px; font-family:inherit; font-size:13px; line-height:1.7;
+    background:var(--white); color:var(--ink); resize:vertical;
+  }
+  .an-imit-ta{
+    width:100%; min-height:calc(100dvh - 160px); box-sizing:border-box;
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 14px; font-family:"Noto Serif SC", serif;
+    font-size:15px; line-height:1.85;
+    background:var(--white); color:var(--ink); resize:none;
+  }
+  .an-hint{ font-size:11px; color:var(--ink-faint); margin:0 0 10px; line-height:1.5; }
+  .an-toolbar{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  #analysisImportBackdrop{
+    display:none; position:fixed; inset:0; background:rgba(42,39,33,0.35);
+    z-index:55; align-items:center; justify-content:center;
+  }
+  #analysisImportModal{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    width:min(480px, 94vw); max-height:90vh; overflow-y:auto; padding:22px; box-sizing:border-box;
+  }
+  #analysisImportModal h3{ font-family:"Noto Serif SC", serif; font-size:16px; margin:0 0 10px; }
+  #analysisImportModal textarea{
+    width:100%; min-height:180px; box-sizing:border-box;
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px; font-family:inherit; font-size:13px;
+    background:var(--white); color:var(--ink);
+  }
+  #analysisImportModal .import-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .book-card .an-kind-badge{
+    display:inline-block; font-size:10px; margin-right:6px;
+    padding:1px 6px; border-radius:3px;
+    background:var(--vermillion-bg); color:var(--vermillion);
+  }
+
   /* 全局懸浮：任意頁新建卡片 */
   #fabNewCard{
     display:none;
@@ -1674,7 +1836,10 @@
     </div>
   </div>
 
-  <button class="lib-add" id="newBookBtn">＋ 新增文章</button>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+    <button class="lib-add" id="newBookBtn" style="margin:0;">＋ 新增文章</button>
+    <button class="lib-add" id="newAnalysisBtn" style="margin:0; background:transparent; border:1px dashed var(--line); color:var(--ink-soft);">＋ 新增拆文</button>
+  </div>
 
   <div class="lib-section" id="folderTilesSection" style="display:none;">
     <div class="lib-section-label">📁 資料夾</div>
@@ -1689,6 +1854,72 @@
   <div id="libFilterStatus" style="display:none;"></div>
 
   <div id="libraryList"></div>
+</div>
+
+<!-- 拆文／仿寫頁 -->
+<div id="analysisPage">
+  <div class="an-top">
+    <button type="button" class="an-btn" id="anBackBtn">← 書架</button>
+    <span class="an-badge">拆文</span>
+    <input type="text" class="an-title" id="anTitleInput" placeholder="拆文標題" />
+    <button type="button" class="an-btn" id="anImportBtn">導入原文</button>
+    <button type="button" class="an-btn" id="anResplitBtn">按規則重切分節</button>
+    <button type="button" class="an-btn" id="anToggleImitBtn">開始仿寫</button>
+    <span style="font-size:11px; color:var(--ink-faint);" id="anImitWc"></span>
+  </div>
+  <div class="an-cols">
+    <div class="an-col col-source" id="anColSource">
+      <div class="an-col-head">
+        <button type="button" class="an-fold" id="anFoldSource" title="摺疊／展開">⟨</button>
+        <span class="an-col-label">原文</span>
+        <span style="margin-left:auto; font-size:11px; color:var(--ink-faint);" id="anSourceWc"></span>
+      </div>
+      <div class="an-col-body">
+        <p class="an-hint">原文不計入今日寫作字數。可導入後自動分節，或在下方大綱手動調整。</p>
+        <div class="an-source-view" id="anSourceView"></div>
+      </div>
+    </div>
+    <div class="an-col col-outline" id="anColOutline">
+      <div class="an-col-head">
+        <button type="button" class="an-fold" id="anFoldOutline" title="摺疊／展開">⟨</button>
+        <span class="an-col-label">大綱</span>
+      </div>
+      <div class="an-col-body">
+        <p class="an-hint">自動分節與每節字數；結構分析請自己寫在下方。</p>
+        <div class="an-toolbar">
+          <button type="button" class="an-btn" id="anAddSecBtn">＋ 手動加節</button>
+          <button type="button" class="an-btn" id="anMergeSecBtn" title="合併選中的相鄰節">合併末兩節</button>
+        </div>
+        <div class="an-outline-list" id="anOutlineList"></div>
+        <div style="font-size:12px; color:var(--ink-soft); margin:12px 0 6px;">結構筆記（手寫）</div>
+        <textarea class="an-outline-notes" id="anOutlineNotes" placeholder="起承轉合、視角、節奏……"></textarea>
+      </div>
+    </div>
+    <div class="an-col col-imit hidden-imit" id="anColImit">
+      <div class="an-col-head">
+        <span class="an-col-label">仿寫</span>
+        <span style="margin-left:auto; font-size:11px; color:var(--ink-faint);">計入今日寫作</span>
+      </div>
+      <div class="an-col-body">
+        <textarea class="an-imit-ta" id="anImitText" placeholder="根據左側原文與大綱開始仿寫……"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="analysisImportBackdrop">
+  <div id="analysisImportModal">
+    <h3>導入原文</h3>
+    <p class="an-hint">支援貼上文字、選 .txt 或 .docx。舊版 .doc 請另存為 docx 或直接複製貼上。</p>
+    <div style="margin-bottom:10px;">
+      <input type="file" id="anFileInput" accept=".txt,.text,.docx,.doc,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+    </div>
+    <textarea id="anPasteArea" placeholder="或在此貼上全文……"></textarea>
+    <div class="import-actions">
+      <button type="button" class="an-btn" id="anImportCancel">取消</button>
+      <button type="button" class="an-btn primary" id="anImportConfirm">導入並分節</button>
+    </div>
+  </div>
 </div>
 
 <div id="statsBackdrop">
@@ -2077,13 +2308,15 @@
   <div id="settingsModal">
     <h3>設定</h3>
     <div class="setting-row">
-      <span>界面配色<small>原稿／墨夜／青瓷／向日葵／灰藍（青瓷、向日葵有淺馬賽克；灰藍為純配色）</small></span>
+      <span>界面配色<small>含灰藍·冷／霧、灰粉（純配色）；青瓷、向日葵有淺馬賽克</small></span>
       <select id="themeSelect" style="width:110px; padding:6px 8px; font-family:inherit; font-size:12.5px; border:1px solid var(--line); border-radius:var(--radius); background:var(--white); color:var(--ink);">
         <option value="original">原稿</option>
         <option value="moye">墨夜</option>
         <option value="qingci">青瓷</option>
         <option value="xiangrikui">向日葵</option>
-        <option value="huilan">灰藍</option>
+        <option value="huilan">灰藍·冷</option>
+        <option value="huilan-wu">灰藍·霧</option>
+        <option value="huifen">灰粉</option>
       </select>
     </div>
     <div class="setting-row">
@@ -2151,7 +2384,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-09-09 12:25';
+const APP_BUILD = '2026-10-02 20:20';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -2164,12 +2397,49 @@ let state = null;
 function freshState(){
   return {
     currentBookId: null,
+    currentAnalysisId: null,
     books: [],
+    analyses: [],
     cards: [],
     trash: [],
     dailyLog: {},
     settings: { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000 }
   };
+}
+
+function freshAnalysis(title){
+  return {
+    id: newId(),
+    title: title || '未命名拆文',
+    sourceText: '',
+    sections: [],
+    outlineNotes: '',
+    imitationText: '',
+    showImitation: false,
+    collapseSource: false,
+    collapseOutline: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+}
+
+function currentAnalysis(){
+  if(!state || !state.currentAnalysisId || !state.analyses) return null;
+  return state.analyses.find(a => a.id === state.currentAnalysisId) || null;
+}
+
+function normalizeAnalyses(){
+  if(!state.analyses) state.analyses = [];
+  if(state.currentAnalysisId === undefined) state.currentAnalysisId = null;
+  state.analyses.forEach(a => {
+    if(!Array.isArray(a.sections)) a.sections = [];
+    if(typeof a.sourceText !== 'string') a.sourceText = '';
+    if(typeof a.outlineNotes !== 'string') a.outlineNotes = '';
+    if(typeof a.imitationText !== 'string') a.imitationText = '';
+    if(typeof a.showImitation !== 'boolean') a.showImitation = false;
+    if(typeof a.collapseSource !== 'boolean') a.collapseSource = false;
+    if(typeof a.collapseOutline !== 'boolean') a.collapseOutline = false;
+  });
 }
 
 function freshCard(){
@@ -2223,9 +2493,10 @@ function getTrashRecentMs(){
 
 function normalizeSettings(){
   if(!state.settings) state.settings = { gridBg: false, keySound: false, sidebarCollapsed: false, dailyGoal: 1000, googleConnected: false, autoSync: true, trashRetentionDays: 30, sensitiveWords: [] };
+  normalizeAnalyses();
   if(typeof state.settings.gridBg !== 'boolean') state.settings.gridBg = false;
   if(typeof state.settings.keySound !== 'boolean') state.settings.keySound = false;
-  const okThemes = { original:1, moye:1, qingci:1, xiangrikui:1, huilan:1 };
+  const okThemes = { original:1, moye:1, qingci:1, xiangrikui:1, huilan:1, 'huilan-wu':1, huifen:1 };
   if(!state.settings.theme || !okThemes[state.settings.theme]) state.settings.theme = 'original';
   if(typeof state.settings.sidebarCollapsed !== 'boolean') state.settings.sidebarCollapsed = false;
   if(typeof state.settings.dailyGoal !== 'number' || state.settings.dailyGoal <= 0) state.settings.dailyGoal = 1000;
@@ -2750,11 +3021,18 @@ function bookWordTotal(book){
   return book.chapters.reduce((s, c) => s + c.sections.reduce((x, sec) => x + wordCount(sec.text, book.wordMode), 0), 0);
 }
 
+function hideAnalysisPage(){
+  const ap = document.getElementById('analysisPage');
+  if(ap) ap.classList.remove('active');
+  state.currentAnalysisId = null;
+}
+
 function showLibrary(){
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
   document.getElementById('trashPage').style.display = 'none';
   document.getElementById('cardsPage').style.display = 'none';
+  hideAnalysisPage();
   document.getElementById('library').style.display = 'block';
   state.currentBookId = null;
   renderLibrary();
@@ -2765,6 +3043,7 @@ function showTrashPage(){
   document.getElementById('main').style.display = 'none';
   document.getElementById('library').style.display = 'none';
   document.getElementById('cardsPage').style.display = 'none';
+  hideAnalysisPage();
   document.getElementById('trashPage').style.display = 'block';
   renderTrash();
 }
@@ -2774,6 +3053,7 @@ function showCardsPage(){
   document.getElementById('main').style.display = 'none';
   document.getElementById('library').style.display = 'none';
   document.getElementById('trashPage').style.display = 'none';
+  hideAnalysisPage();
   document.getElementById('cardsPage').style.display = 'block';
   state.currentBookId = null;
   renderCards();
@@ -2781,9 +3061,11 @@ function showCardsPage(){
 
 function openBook(id){
   state.currentBookId = id;
+  state.currentAnalysisId = null;
   document.getElementById('library').style.display = 'none';
   document.getElementById('trashPage').style.display = 'none';
   document.getElementById('cardsPage').style.display = 'none';
+  hideAnalysisPage();
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'flex';
   document.getElementById('sidebar').classList.toggle('collapsed', !!(state.settings && state.settings.sidebarCollapsed));
@@ -3053,10 +3335,13 @@ function renderFilterBar(){
 }
 
 function renderLibrary(){
+  normalizeAnalyses();
   renderFilterBar();
   const list = document.getElementById('libraryList');
-  if(state.books.length === 0){
-    list.innerHTML = '<div class="lib-empty">還沒有任何作品，點上面「＋ 新增文章」開始寫作</div>';
+  const hasBooks = state.books.length > 0;
+  const hasAnalyses = state.analyses && state.analyses.length > 0;
+  if(!hasBooks && !hasAnalyses){
+    list.innerHTML = '<div class="lib-empty">還沒有任何作品，點「＋ 新增文章」寫作，或「＋ 新增拆文」導入他人文本</div>';
     return;
   }
   let filtered = state.books;
@@ -3069,12 +3354,44 @@ function renderLibrary(){
       return bookTags.some(t => libFilterTags.has(t));
     });
   }
-  if(filtered.length === 0){
+  list.innerHTML = '';
+  // 拆文列表（不受資料夾／標籤篩選影響，單獨一區）
+  if(hasAnalyses && libFilterFolder === null && libFilterTags.size === 0){
+    const anSorted = [...state.analyses].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    anSorted.forEach(an => {
+      const card = document.createElement('div');
+      card.className = 'book-card';
+      const t = new Date(an.updatedAt || an.createdAt || Date.now());
+      const timeStr = `${t.getFullYear()}/${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}`;
+      const swc = analysisSourceTotal(an);
+      const iwc = wordCount(an.imitationText || '');
+      card.innerHTML = `
+        <div class="book-card-main">
+          <div class="book-title-display" title="${escapeHtml(an.title)}"><span class="an-kind-badge">拆文</span>${escapeHtml(an.title || '未命名拆文')}</div>
+          <div class="book-stats">原文 ${swc} 字 · 仿寫 ${iwc} 字 · ${an.sections.length || 0} 節 · ${timeStr}</div>
+        </div>
+        <div class="book-actions">
+          <button class="book-open-btn" data-an-open="${an.id}">開啟</button>
+          <button class="book-del-btn" data-an-del="${an.id}" title="刪除">刪</button>
+        </div>
+      `;
+      card.querySelector('[data-an-open]').onclick = () => openAnalysis(an.id);
+      card.querySelector('[data-an-del]').onclick = (e) => {
+        e.stopPropagation();
+        if(!confirm(`確定刪除拆文「${an.title}」？此操作從本機列表移除（與作品回收箱分開）。`)) return;
+        state.analyses = state.analyses.filter(x => x.id !== an.id);
+        if(state.currentAnalysisId === an.id) state.currentAnalysisId = null;
+        schedulePersist();
+        renderLibrary();
+      };
+      list.appendChild(card);
+    });
+  }
+  if(filtered.length === 0 && list.children.length === 0){
     list.innerHTML = '<div class="lib-empty">沒有符合篩選條件的作品</div>';
     return;
   }
   const sorted = [...filtered].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  list.innerHTML = '';
   sorted.forEach(book => {
     const card = document.createElement('div');
     card.className = 'book-card';
@@ -3112,7 +3429,6 @@ function renderLibrary(){
       schedulePersist();
       renderLibrary();
     };
-    // 卡片上的標籤：點一下即可篩選
     card.querySelectorAll('[data-filter-tag]').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -3127,6 +3443,298 @@ function renderLibrary(){
 }
 
 document.getElementById('newBookBtn').onclick = () => openNewBookModal();
+
+/* ================= 拆文／仿寫 ================= */
+const CN_NUM = { '零':0,'〇':0,'一':1,'二':2,'两':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
+
+function parseLooseChapterNum(str){
+  const s = String(str || '').trim();
+  if(/^\d+$/.test(s)) return parseInt(s, 10);
+  if(s === '十') return 10;
+  if(s.length === 1 && CN_NUM[s] != null) return CN_NUM[s];
+  if(s.startsWith('十')) return 10 + (CN_NUM[s[1]] || 0);
+  if(s.endsWith('十') && s.length === 2) return (CN_NUM[s[0]] || 0) * 10;
+  if(s.length === 2 && CN_NUM[s[0]] != null && CN_NUM[s[1]] != null) return CN_NUM[s[0]] * 10 + CN_NUM[s[1]];
+  return null;
+}
+
+/** 按「第×章／節」或行首 1. 1、 等切分；切不到則整篇一節 */
+function splitAnalysisSource(text){
+  const raw = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  if(!raw.trim()) return [];
+  const lines = raw.split('\n');
+  const headingRe = /^(?:第\s*([0-9零〇一二三四五六七八九十两兩百千]+)\s*[章节節回部部]|([0-9]+)\s*[\.、．]\s*\S|([一二三四五六七八九十]+)\s*、\s*\S)/;
+  const marks = [];
+  for(let i = 0; i < lines.length; i++){
+    const line = lines[i].trim();
+    if(!line) continue;
+    const m = line.match(headingRe);
+    if(m) marks.push({ lineIndex: i, title: line.slice(0, 40) });
+  }
+  if(marks.length === 0){
+    const t = raw.trim();
+    return [{ id: newId(), title: '全文', text: t, wc: wordCount(t) }];
+  }
+  // 若第一個標題前有前言，收成「開頭」
+  const sections = [];
+  if(marks[0].lineIndex > 0){
+    const pre = lines.slice(0, marks[0].lineIndex).join('\n').trim();
+    if(pre) sections.push({ id: newId(), title: '開頭', text: pre, wc: wordCount(pre) });
+  }
+  for(let mi = 0; mi < marks.length; mi++){
+    const start = marks[mi].lineIndex;
+    const end = mi + 1 < marks.length ? marks[mi + 1].lineIndex : lines.length;
+    const body = lines.slice(start, end).join('\n').trim();
+    if(!body) continue;
+    sections.push({ id: newId(), title: marks[mi].title, text: body, wc: wordCount(body) });
+  }
+  return sections;
+}
+
+function analysisSourceTotal(a){
+  if(!a) return 0;
+  if(a.sections && a.sections.length) return a.sections.reduce((s, sec) => s + (sec.wc || wordCount(sec.text || '')), 0);
+  return wordCount(a.sourceText || '');
+}
+
+function applySourceToAnalysis(a, text){
+  a.sourceText = String(text || '');
+  a.sections = splitAnalysisSource(a.sourceText);
+  a.updatedAt = Date.now();
+}
+
+async function extractTextFromDocx(arrayBuffer){
+  if(typeof JSZip === 'undefined') throw new Error('JSZip 未載入');
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  const f = zip.file('word/document.xml');
+  if(!f) throw new Error('不是有效的 docx');
+  const xml = await f.async('string');
+  let text = xml
+    .replace(/<w:tab[^/]*\/>/g, '\t')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<\/w:tr>/g, '\n')
+    .replace(/<w:br[^/]*\/>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/\n{3,}/g, '\n\n');
+  return text.trim();
+}
+
+function openAnalysis(id){
+  normalizeAnalyses();
+  const a = state.analyses.find(x => x.id === id);
+  if(!a) return;
+  state.currentAnalysisId = id;
+  state.currentBookId = null;
+  document.getElementById('library').style.display = 'none';
+  document.getElementById('trashPage').style.display = 'none';
+  document.getElementById('cardsPage').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('analysisPage').classList.add('active');
+  renderAnalysisPage();
+}
+
+function renderAnalysisPage(){
+  const a = currentAnalysis();
+  if(!a) return;
+  document.getElementById('anTitleInput').value = a.title || '';
+  document.getElementById('anOutlineNotes').value = a.outlineNotes || '';
+  document.getElementById('anImitText').value = a.imitationText || '';
+  document.getElementById('anSourceWc').textContent = analysisSourceTotal(a) + ' 字（不计写作）';
+  document.getElementById('anImitWc').textContent = a.showImitation
+    ? ('仿写 ' + wordCount(a.imitationText || '') + ' 字')
+    : '';
+
+  const colS = document.getElementById('anColSource');
+  const colO = document.getElementById('anColOutline');
+  const colI = document.getElementById('anColImit');
+  colS.classList.toggle('collapsed', !!a.collapseSource);
+  colO.classList.toggle('collapsed', !!a.collapseOutline);
+  colI.classList.toggle('hidden-imit', !a.showImitation);
+  document.getElementById('anToggleImitBtn').textContent = a.showImitation ? '收起仿写栏' : '开始仿写';
+  document.getElementById('anToggleImitBtn').classList.toggle('active', !!a.showImitation);
+  document.getElementById('anFoldSource').textContent = a.collapseSource ? '⟩' : '⟨';
+  document.getElementById('anFoldOutline').textContent = a.collapseOutline ? '⟩' : '⟨';
+
+  const view = document.getElementById('anSourceView');
+  if(!a.sections || a.sections.length === 0){
+    view.innerHTML = a.sourceText
+      ? `<div class="an-source-view">${escapeHtml(a.sourceText)}</div>`
+      : '<p class="an-hint">尚未导入原文。点上方「导入原文」。</p>';
+  } else {
+    view.innerHTML = a.sections.map(sec =>
+      `<div class="an-sec-block" id="anSec_${sec.id}">
+        <div class="an-sec-h"><span>${escapeHtml(sec.title)}</span><span class="wc">${sec.wc || wordCount(sec.text)} 字</span></div>
+        <div>${escapeHtml(sec.text)}</div>
+      </div>`
+    ).join('');
+  }
+
+  const list = document.getElementById('anOutlineList');
+  if(!a.sections || a.sections.length === 0){
+    list.innerHTML = '<p class="an-hint">导入并分节后，此处显示目录与每节字数。</p>';
+  } else {
+    list.innerHTML = a.sections.map((sec, idx) =>
+      `<div class="an-outline-item" data-sec="${sec.id}">
+        <span class="oi-title">${idx + 1}. ${escapeHtml(sec.title)}</span>
+        <span class="oi-wc">${sec.wc || wordCount(sec.text)} 字</span>
+      </div>`
+    ).join('');
+    list.querySelectorAll('[data-sec]').forEach(el => {
+      el.onclick = () => {
+        const target = document.getElementById('anSec_' + el.getAttribute('data-sec'));
+        if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+    });
+  }
+}
+
+function createAnalysisAndOpen(){
+  normalizeAnalyses();
+  const a = freshAnalysis('未命名拆文');
+  state.analyses.push(a);
+  schedulePersist();
+  openAnalysis(a.id);
+  openAnalysisImportModal();
+}
+
+function openAnalysisImportModal(){
+  document.getElementById('anPasteArea').value = '';
+  document.getElementById('anFileInput').value = '';
+  document.getElementById('analysisImportBackdrop').style.display = 'flex';
+}
+function closeAnalysisImportModal(){
+  document.getElementById('analysisImportBackdrop').style.display = 'none';
+}
+
+document.getElementById('newAnalysisBtn').onclick = () => createAnalysisAndOpen();
+document.getElementById('anBackBtn').onclick = () => {
+  const a = currentAnalysis();
+  if(a){ a.updatedAt = Date.now(); schedulePersist(); }
+  showLibrary();
+};
+document.getElementById('anTitleInput').addEventListener('input', e => {
+  const a = currentAnalysis();
+  if(!a) return;
+  a.title = e.target.value;
+  a.updatedAt = Date.now();
+  schedulePersist();
+});
+document.getElementById('anOutlineNotes').addEventListener('input', e => {
+  const a = currentAnalysis();
+  if(!a) return;
+  a.outlineNotes = e.target.value;
+  a.updatedAt = Date.now();
+  schedulePersist();
+});
+document.getElementById('anImitText').addEventListener('input', e => {
+  const a = currentAnalysis();
+  if(!a) return;
+  const prev = a.imitationText || '';
+  const next = e.target.value;
+  const delta = wordCount(next) - wordCount(prev);
+  a.imitationText = next;
+  a.updatedAt = Date.now();
+  if(delta > 0) trackWriting(delta);
+  document.getElementById('anImitWc').textContent = '仿写 ' + wordCount(next) + ' 字';
+  schedulePersist();
+});
+document.getElementById('anImportBtn').onclick = () => openAnalysisImportModal();
+document.getElementById('anImportCancel').onclick = () => closeAnalysisImportModal();
+document.getElementById('analysisImportBackdrop').addEventListener('click', e => {
+  if(e.target.id === 'analysisImportBackdrop') closeAnalysisImportModal();
+});
+document.getElementById('anResplitBtn').onclick = () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  if(!a.sourceText.trim()){ alert('尚无原文'); return; }
+  a.sections = splitAnalysisSource(a.sourceText);
+  a.updatedAt = Date.now();
+  schedulePersist();
+  renderAnalysisPage();
+};
+document.getElementById('anToggleImitBtn').onclick = () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  a.showImitation = !a.showImitation;
+  a.updatedAt = Date.now();
+  schedulePersist();
+  renderAnalysisPage();
+};
+document.getElementById('anFoldSource').onclick = () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  a.collapseSource = !a.collapseSource;
+  renderAnalysisPage();
+  schedulePersist();
+};
+document.getElementById('anFoldOutline').onclick = () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  a.collapseOutline = !a.collapseOutline;
+  renderAnalysisPage();
+  schedulePersist();
+};
+document.getElementById('anAddSecBtn').onclick = () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  const title = prompt('新节标题', '新节');
+  if(title === null) return;
+  a.sections.push({ id: newId(), title: title.trim() || '新节', text: '', wc: 0 });
+  a.updatedAt = Date.now();
+  schedulePersist();
+  renderAnalysisPage();
+};
+document.getElementById('anMergeSecBtn').onclick = () => {
+  const a = currentAnalysis();
+  if(!a || a.sections.length < 2){ alert('至少需要两节才能合并'); return; }
+  const last = a.sections.pop();
+  const prev = a.sections[a.sections.length - 1];
+  prev.text = (prev.text + '\n\n' + last.text).trim();
+  prev.title = prev.title + ' + ' + last.title;
+  prev.wc = wordCount(prev.text);
+  a.updatedAt = Date.now();
+  schedulePersist();
+  renderAnalysisPage();
+};
+
+document.getElementById('anImportConfirm').onclick = async () => {
+  const a = currentAnalysis();
+  if(!a) return;
+  let text = document.getElementById('anPasteArea').value;
+  const fileInput = document.getElementById('anFileInput');
+  const file = fileInput.files && fileInput.files[0];
+  try{
+    if(file){
+      const name = (file.name || '').toLowerCase();
+      if(name.endsWith('.doc') && !name.endsWith('.docx')){
+        alert('旧版 .doc 无法在浏览器中可靠解析，请另存为 .docx 或复制正文后粘贴。');
+        return;
+      }
+      if(name.endsWith('.docx')){
+        text = await extractTextFromDocx(await file.arrayBuffer());
+      } else {
+        text = await file.text();
+      }
+    }
+    if(!String(text || '').trim()){
+      alert('没有可导入的内容');
+      return;
+    }
+    applySourceToAnalysis(a, text);
+    if(!a.title || a.title === '未命名拆文'){
+      const firstLine = String(text).trim().split('\n')[0].trim().slice(0, 30);
+      if(firstLine) a.title = firstLine;
+    }
+    schedulePersist();
+    closeAnalysisImportModal();
+    renderAnalysisPage();
+  } catch(err){
+    alert('导入失败：' + (err && err.message ? err.message : String(err)));
+  }
+};
 
 document.getElementById('toLibraryBtn').onclick = () => {
   flushPending();
@@ -3181,6 +3789,9 @@ function stateContentScore(s){
   (s.cards || []).forEach(c => {
     score += 30 + ((c.body || '').length) + ((c.title || '').length);
   });
+  (s.analyses || []).forEach(a => {
+    score += 200 + (a.sourceText || '').length + (a.imitationText || '').length + (a.outlineNotes || '').length;
+  });
   return score;
 }
 
@@ -3200,6 +3811,10 @@ function stateFreshness(s){
     if(c.updatedAt && c.updatedAt > t) t = c.updatedAt;
     if(c.createdAt && c.createdAt > t) t = c.createdAt;
   });
+  (s.analyses || []).forEach(a => {
+    if(a.updatedAt && a.updatedAt > t) t = a.updatedAt;
+    if(a.createdAt && a.createdAt > t) t = a.createdAt;
+  });
   return t;
 }
 
@@ -3217,7 +3832,8 @@ function stateSyncHash(s){
   try{
     const bookTs = (s.books || []).map(b => b.updatedAt || 0).join(',');
     const cardTs = (s.cards || []).map(c => c.updatedAt || 0).join(',');
-    return String(stateContentScore(s)) + ':' + bookTs + ':' + cardTs;
+    const anTs = (s.analyses || []).map(a => a.updatedAt || 0).join(',');
+    return String(stateContentScore(s)) + ':' + bookTs + ':' + cardTs + ':' + anTs;
   } catch(e){ return String(Date.now()); }
 }
 
