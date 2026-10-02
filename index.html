@@ -1887,8 +1887,8 @@
       <div class="an-col-body">
         <p class="an-hint">自動分節與每節字數；結構分析請自己寫在下方。</p>
         <div class="an-toolbar">
-          <button type="button" class="an-btn" id="anAddSecBtn">＋ 手動加節</button>
-          <button type="button" class="an-btn" id="anMergeSecBtn" title="合併選中的相鄰節">合併末兩節</button>
+          <button type="button" class="an-btn" id="anAddSecBtn" title="用原文裡某一整行作為新節起點切開">在指定行切開</button>
+          <button type="button" class="an-btn" id="anMergeSecBtn" title="合併最後兩節">合併末兩節</button>
         </div>
         <div class="an-outline-list" id="anOutlineList"></div>
         <div style="font-size:12px; color:var(--ink-soft); margin:12px 0 6px;">結構筆記（手寫）</div>
@@ -2384,7 +2384,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-10-02 20:20';
+const APP_BUILD = '2026-10-02 20:50';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3458,24 +3458,38 @@ function parseLooseChapterNum(str){
   return null;
 }
 
-/** 按「第×章／節」或行首 1. 1、 等切分；切不到則整篇一節 */
+/** 是否像「節標題行」：單獨的 1 / 2. / 3、、第一章、一、xxx 等 */
+function isAnalysisHeadingLine(line){
+  const t = String(line || '').trim();
+  if(!t) return false;
+  // 整行只有阿拉伯數字（你的「1 / 2 / 3」格式）
+  if(/^\d{1,4}$/.test(t)) return true;
+  // 1.  2、  3．  （後面可有可無標題文字）
+  if(/^\d{1,4}\s*[\.．、。](?:\s*\S.*)?$/.test(t)) return true;
+  // 第×章／節／回…
+  if(/^第\s*[0-9零〇一二三四五六七八九十百千两兩]+\s*[章节節回部]/.test(t)) return true;
+  // 一、二、 開頭
+  if(/^[一二三四五六七八九十百]+\s*、\s*\S/.test(t)) return true;
+  // 整行只有中文數字
+  if(/^[一二三四五六七八九十百]+$/.test(t)) return true;
+  return false;
+}
+
+/** 按標題行切分；切不到則整篇一節 */
 function splitAnalysisSource(text){
   const raw = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   if(!raw.trim()) return [];
   const lines = raw.split('\n');
-  const headingRe = /^(?:第\s*([0-9零〇一二三四五六七八九十两兩百千]+)\s*[章节節回部部]|([0-9]+)\s*[\.、．]\s*\S|([一二三四五六七八九十]+)\s*、\s*\S)/;
   const marks = [];
   for(let i = 0; i < lines.length; i++){
     const line = lines[i].trim();
     if(!line) continue;
-    const m = line.match(headingRe);
-    if(m) marks.push({ lineIndex: i, title: line.slice(0, 40) });
+    if(isAnalysisHeadingLine(line)) marks.push({ lineIndex: i, title: line.slice(0, 48) });
   }
   if(marks.length === 0){
     const t = raw.trim();
     return [{ id: newId(), title: '全文', text: t, wc: wordCount(t) }];
   }
-  // 若第一個標題前有前言，收成「開頭」
   const sections = [];
   if(marks[0].lineIndex > 0){
     const pre = lines.slice(0, marks[0].lineIndex).join('\n').trim();
@@ -3680,9 +3694,53 @@ document.getElementById('anFoldOutline').onclick = () => {
 document.getElementById('anAddSecBtn').onclick = () => {
   const a = currentAnalysis();
   if(!a) return;
-  const title = prompt('新节标题', '新节');
-  if(title === null) return;
-  a.sections.push({ id: newId(), title: title.trim() || '新节', text: '', wc: 0 });
+  const src = a.sourceText || '';
+  if(!src.trim()){
+    alert('尚无原文，请先导入。');
+    return;
+  }
+  const marker = prompt(
+    '请输入原文中「某一整行」的内容（须与该行完全一致，例如单独的 2 或 第二章）。\n将从这一行起切成新的一节。',
+    ''
+  );
+  if(marker === null) return;
+  const m = marker.trim();
+  if(!m) return;
+  const lines = src.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  let idx = -1;
+  for(let i = 0; i < lines.length; i++){
+    if(lines[i].trim() === m){ idx = i; break; }
+  }
+  if(idx < 0){
+    alert('原文中找不到完全相同的一行，请复制原文里的那一行再试。');
+    return;
+  }
+  // 在该行切开：前半 / 从该行到结尾；再对全文按规则重切会更干净——这里改为：临时把该行视为标题行逻辑
+  // 直接按「所有已是标题的行 + 这一行」切
+  const marks = [];
+  for(let i = 0; i < lines.length; i++){
+    const line = lines[i].trim();
+    if(!line) continue;
+    if(i === idx || isAnalysisHeadingLine(line)) marks.push({ lineIndex: i, title: line.slice(0, 48) });
+  }
+  // 去重 lineIndex
+  const seen = new Set();
+  const uniq = [];
+  marks.forEach(x => { if(!seen.has(x.lineIndex)){ seen.add(x.lineIndex); uniq.push(x); } });
+  uniq.sort((p, q) => p.lineIndex - q.lineIndex);
+  const sections = [];
+  if(uniq[0].lineIndex > 0){
+    const pre = lines.slice(0, uniq[0].lineIndex).join('\n').trim();
+    if(pre) sections.push({ id: newId(), title: '開頭', text: pre, wc: wordCount(pre) });
+  }
+  for(let mi = 0; mi < uniq.length; mi++){
+    const start = uniq[mi].lineIndex;
+    const end = mi + 1 < uniq.length ? uniq[mi + 1].lineIndex : lines.length;
+    const body = lines.slice(start, end).join('\n').trim();
+    if(!body) continue;
+    sections.push({ id: newId(), title: uniq[mi].title, text: body, wc: wordCount(body) });
+  }
+  a.sections = sections;
   a.updatedAt = Date.now();
   schedulePersist();
   renderAnalysisPage();
