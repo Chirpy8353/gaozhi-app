@@ -2384,7 +2384,7 @@
 <script>
 // 每次交付新版本時手動更新這個時間戳——排查「你看到的是不是最新版」時，
 // 直接請對方看這裡顯示的時間，比用無痕視窗排除法快很多。
-const APP_BUILD = '2026-10-02 20:50';
+const APP_BUILD = '2026-10-03 00:30';
 document.querySelectorAll('#gateVersionTag, #appVersionTag').forEach(el => {
   el.textContent = '版本 ' + APP_BUILD;
 });
@@ -3517,6 +3517,15 @@ function applySourceToAnalysis(a, text){
   a.updatedAt = Date.now();
 }
 
+/** 載入後若 sourceText 空但 sections 有內容，拼回原文，避免只殘留標題 */
+function recoverAnalysisSource(a){
+  if(!a) return;
+  if((a.sourceText || '').trim()) return;
+  if(!a.sections || !a.sections.length) return;
+  const joined = a.sections.map(s => s.text || '').join('\n\n').trim();
+  if(joined) a.sourceText = joined;
+}
+
 async function extractTextFromDocx(arrayBuffer){
   if(typeof JSZip === 'undefined') throw new Error('JSZip 未載入');
   const zip = await JSZip.loadAsync(arrayBuffer);
@@ -3539,6 +3548,11 @@ function openAnalysis(id){
   normalizeAnalyses();
   const a = state.analyses.find(x => x.id === id);
   if(!a) return;
+  recoverAnalysisSource(a);
+  // 有原文但分節為空時自動補切
+  if((a.sourceText || '').trim() && (!a.sections || !a.sections.length)){
+    a.sections = splitAnalysisSource(a.sourceText);
+  }
   state.currentAnalysisId = id;
   state.currentBookId = null;
   document.getElementById('library').style.display = 'none';
@@ -3624,9 +3638,10 @@ function closeAnalysisImportModal(){
 }
 
 document.getElementById('newAnalysisBtn').onclick = () => createAnalysisAndOpen();
-document.getElementById('anBackBtn').onclick = () => {
+document.getElementById('anBackBtn').onclick = async () => {
   const a = currentAnalysis();
-  if(a){ a.updatedAt = Date.now(); schedulePersist(); }
+  if(a) a.updatedAt = Date.now();
+  try{ await persistNow(); } catch(e){}
   showLibrary();
 };
 document.getElementById('anTitleInput').addEventListener('input', e => {
@@ -3786,9 +3801,16 @@ document.getElementById('anImportConfirm').onclick = async () => {
       const firstLine = String(text).trim().split('\n')[0].trim().slice(0, 30);
       if(firstLine) a.title = firstLine;
     }
-    schedulePersist();
+    // 原文可能較長：立刻落盤，避免只靠 600ms 防抖、關頁後丟失
     closeAnalysisImportModal();
     renderAnalysisPage();
+    try{
+      await persistNow();
+      setAutosaveStatus('saved');
+    } catch(e){
+      console.error(e);
+      alert('原文已导入到当前页，但写入本机失败，请再点一次导入或返回书架前勿关闭页面。');
+    }
   } catch(err){
     alert('导入失败：' + (err && err.message ? err.message : String(err)));
   }
@@ -4749,6 +4771,7 @@ async function persistNow(){
 function schedulePersist(){
   if(!vaultKey || !state) return;
   if(currentBook()) currentBook().updatedAt = Date.now();
+  if(currentAnalysis()) currentAnalysis().updatedAt = Date.now();
   dirtySincePersist = true;
   setAutosaveStatus('saving');
   clearTimeout(persistTimer);
